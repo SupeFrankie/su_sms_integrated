@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Extend Odoo's Settings page -->
+        <record id="res_config_settings_view_form_sms" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.su.sms</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="sms.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                
+                <!-- Add notice after SMS provider selection -->
+                <xpath expr="//div[@id='sms_twilio_credentials']" position="after">
+                    
+                    <div id="sms_africas_talking_notice" 
+                         class="col-12 mt-3">
+                        
+                        <div class="alert alert-info" role="alert">
+                            <h5>🎓 Strathmore University SMS System</h5>
+                            <p>
+                                When you select <strong>Africa's Talking</strong> as your SMS provider,
+                                SMS will be sent using the SU SMS module's gateway configuration.
+                            </p>
+                            <hr/>
+                            <p class="mb-0">
+                                <strong>To configure Africa's Talking credentials:</strong><br/>
+                                Go to: <strong>SU SMS System → Configuration → Gateway Settings</strong><br/>
+                                Or ensure your <code>.env</code> file has the correct credentials.
+                            </p>
+                        </div>
+                        
+                    </div>
+                    
+                </xpath>
+                
+            </field>
+        </record>
+        
+    </data>
+</odoo>

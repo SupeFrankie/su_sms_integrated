@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Create IAP Account for Africa's Talking -->
+        <record id="iap_account_africas_talking" model="iap.account">
+            <field name="service_name">sms</field>
+            <field name="provider">africas_talking</field>
+            <field name="account_token">su_sms_africas_talking</field>
+        </record>
+        
+    </data>
+</odoo>
