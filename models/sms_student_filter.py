@@ -54,7 +54,7 @@ class SMSStudentFilter(models.TransientModel):
         
         campaign = self.env['sms.campaign'].create({
             'name': _('Student SMS - %s') % fields.Datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'sms_type_id': self.env.ref('su_sms.sms_type_student').id,
+            'sms_type_id': self.env.ref('.sms_type_student').id,
             'message': self.message,
             'target_type': 'all_students',
             'administrator_id': self.administrator_id.id,

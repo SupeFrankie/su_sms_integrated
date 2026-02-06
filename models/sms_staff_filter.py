@@ -47,7 +47,7 @@ class SMSStaffFilter(models.TransientModel):
         # Create campaign
         campaign = self.env['sms.campaign'].create({
             'name': _('Staff SMS - %s') % fields.Datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'sms_type_id': self.env.ref('su_sms.sms_type_staff').id,
+            'sms_type_id': self.env.ref('.sms_type_staff').id,
             'message': self.message,
             'target_type': 'all_staff',
             'department_id': self.department_id.id if self.department_id else False,

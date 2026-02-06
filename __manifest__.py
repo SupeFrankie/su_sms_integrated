@@ -24,7 +24,7 @@
         'data/gateway_data.xml',
         'data/sms_template_data.xml',
         'data/iap_provider_data.xml',
-        'views/res_config_settings_views_sms.xml',
+        #'views/res_config_settings_views_sms.xml',
         
         # 3. WIZARDS
         'wizard/sms_compose_wizard_views.xml',

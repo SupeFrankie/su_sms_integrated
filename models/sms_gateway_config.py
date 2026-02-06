@@ -77,11 +77,12 @@ class SmsGatewayConfiguration(models.Model):
         help='When this gateway was last used'
     )
 
-    @api.model
-    def create(self, vals):
-        if vals.get('is_default'):
-            self.search([('is_default', '=', True)]).write({'is_default': False})
-        return super(SmsGatewayConfiguration, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('is_default'):
+                self.search([('is_default', '=', True)]).write({'is_default': False})
+        return super(SmsGatewayConfiguration, self).create(vals_list)
 
     def write(self, vals):
         if vals.get('is_default'):
@@ -92,7 +93,7 @@ class SmsGatewayConfiguration(models.Model):
     def create_from_env(self):
         """Called on module install by data/gateway_data.xml. Safe to run multiple times; no-op if a record already exists."""
         if self.search_count([]) == 0:
-            self.create({'name': 'Default Gateway'})
+            self.create([{'name': 'Default Gateway'}])
 
     def _compute_statistics(self):
         """Compute gateway statistics"""

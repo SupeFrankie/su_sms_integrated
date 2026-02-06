@@ -107,7 +107,7 @@ class SMSCampaign(models.Model):
                     recipients.append({'name': name, 'email': email})
             
             # Send emails
-            template = self.env.ref('su_sms.email_template_low_credit', raise_if_not_found=False)
+            template = self.env.ref('.email_template_low_credit', raise_if_not_found=False)
             if template:
                 for recipient in recipients:
                     template.with_context(
