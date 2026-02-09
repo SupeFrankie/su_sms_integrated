@@ -23,15 +23,15 @@ class ResUsers(models.Model):
             return False
         
         # Check groups in priority order (highest to lowest)
-        if self.has_group('su_sms.group_sms_system_admin'):
+        if self.has_group('su_sms_integrated.group_sms_system_admin'):
             return 'system_admin'
-        elif self.has_group('su_sms.group_sms_administrator'):
+        elif self.has_group('su_sms_integrated.group_sms_administrator'):
             return 'administrator'
-        elif self.has_group('su_sms.group_sms_faculty_admin'):
+        elif self.has_group('su_sms_integrated.group_sms_faculty_admin'):
             return 'faculty_admin'
-        elif self.has_group('su_sms.group_sms_department_admin'):
+        elif self.has_group('su_sms_integrated.group_sms_department_admin'):
             return 'department_admin'
-        elif self.has_group('su_sms.group_sms_basic_user'):
+        elif self.has_group('su_sms_integrated.group_sms_basic_user'):
             return 'basic'
         else:
             return False
@@ -59,12 +59,12 @@ class ResUsers(models.Model):
         if self.login and str(self.login).isnumeric():
             return self.env['hr.department'].browse([])
         
-        if self.has_group('su_sms.group_sms_system_admin') or \
-           self.has_group('su_sms.group_sms_administrator'):
+        if self.has_group('su_sms_integrated.group_sms_system_admin') or \
+           self.has_group('su_sms_integrated.group_sms_administrator'):
             # System Admin and Administrator can access all departments
             return self.env['hr.department'].search([])
         
-        elif self.has_group('su_sms.group_sms_faculty_admin'):
+        elif self.has_group('su_sms_integrated.group_sms_faculty_admin'):
             # Faculty Admin can access their faculty and sub-departments
             if self.department_id and self.department_id.is_school:
                 return self.env['hr.department'].search([
@@ -74,7 +74,7 @@ class ResUsers(models.Model):
                 ])
             return self.department_id
         
-        elif self.has_group('su_sms.group_sms_department_admin'):
+        elif self.has_group('su_sms_integrated.group_sms_department_admin'):
             # Department Admin can only access their department
             return self.department_id
         
@@ -88,9 +88,9 @@ class ResUsers(models.Model):
         # Students must never have SMS permissions, even if misconfigured into SMS groups.
         if self.login and str(self.login).isnumeric():
             return False
-        return self.has_group('su_sms.group_sms_faculty_admin') or \
-               self.has_group('su_sms.group_sms_administrator') or \
-               self.has_group('su_sms.group_sms_system_admin')
+        return self.has_group('su_sms_integrated.group_sms_faculty_admin') or \
+               self.has_group('su_sms_integrated.group_sms_administrator') or \
+               self.has_group('su_sms_integrated.group_sms_system_admin')
     
     def can_send_to_all_staff(self):
         """Check if user can send to all staff"""
@@ -98,9 +98,9 @@ class ResUsers(models.Model):
         # Students must never have SMS permissions, even if misconfigured into SMS groups.
         if self.login and str(self.login).isnumeric():
             return False
-        return self.has_group('su_sms.group_sms_department_admin') or \
-               self.has_group('su_sms.group_sms_administrator') or \
-               self.has_group('su_sms.group_sms_system_admin')
+        return self.has_group('su_sms_integrated.group_sms_department_admin') or \
+               self.has_group('su_sms_integrated.group_sms_administrator') or \
+               self.has_group('su_sms_integrated.group_sms_system_admin')
     
     def can_manage_configuration(self):
         """Check if user can manage system configuration"""
@@ -108,4 +108,4 @@ class ResUsers(models.Model):
         # Students must never manage SMS configuration, regardless of group misconfiguration.
         if self.login and str(self.login).isnumeric():
             return False
-        return self.has_group('su_sms.group_sms_system_admin')
+        return self.has_group('su_sms_integrated.group_sms_system_admin')

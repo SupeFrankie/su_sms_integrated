@@ -33,7 +33,7 @@ export class SMSLiveWidget extends TextField {
     }
 }
 
-SMSLiveWidget.template = "su_sms.SMSLiveWidget";
+SMSLiveWidget.template = "su_sms_integrated.SMSLiveWidget";
 SMSLiveWidget.supportedTypes = ["text"];
 
 registry.category("fields").add("sms_live_counter", SMSLiveWidget);

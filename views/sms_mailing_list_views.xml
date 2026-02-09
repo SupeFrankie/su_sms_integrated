@@ -16,7 +16,7 @@
                         </group>
                         <notebook>
                             <page string="Contacts">
-                                <button name="%(su_sms.action_sms_import_wizard)d" 
+                                <button name="%(su_sms_integrated.action_sms_import_wizard)d" 
                                         string="Import Contacts via CSV" 
                                         type="action" 
                                         class="btn-primary mb-2"

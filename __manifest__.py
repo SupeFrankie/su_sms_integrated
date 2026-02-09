@@ -68,13 +68,13 @@
     #     'web.assets_backend': [
             
         
-            # ''su_sms/static/src/css/sms_dashboard.css',
-            #'su_sms/static/src/xml/sms_dashboard.xml',
-            #'su_sms/static/src/js/sms_dashboard.js','        
-    #         'su_sms/static/src/xml/sms_live_widget.xml',
-    #         'su_sms/static/src/js/sms_live_widget.js',
-    #         'su_sms/static/src/xml/sms_systray_balance.xml',
-    #         'su_sms/static/src/js/sms_systray_balance.js',
+            # ''su_sms_integrated/static/src/css/sms_dashboard.css',
+            #'su_sms_integrated/static/src/xml/sms_dashboard.xml',
+            #'su_sms_integrated/static/src/js/sms_dashboard.js','        
+    #         'su_sms_integrated/static/src/xml/sms_live_widget.xml',
+    #         'su_sms_integrated/static/src/js/sms_live_widget.js',
+    #         'su_sms_integrated/static/src/xml/sms_systray_balance.xml',
+    #         'su_sms_integrated/static/src/js/sms_systray_balance.js',
     #     ],
     # },
     

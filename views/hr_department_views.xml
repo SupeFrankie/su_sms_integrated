@@ -8,7 +8,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//sheet" position="inside">
                     <notebook>
-                        <page string="SMS Configuration" groups="su_sms.group_sms_system_admin">
+                        <page string="SMS Configuration" groups="su_sms_integrated.group_sms_system_admin">
                             <group>
                                 <group string="Department Details">
                                     <field name="short_name"/>
@@ -45,8 +45,8 @@
                 <xpath expr="//field[@name='name']" position="after">
                     <field name="short_name"/>
                     <field name="is_school" invisible="1"/>
-                    <field name="account_number" groups="su_sms.group_sms_system_admin"/>
-                    <field name="object_code" groups="su_sms.group_sms_system_admin"/>
+                    <field name="account_number" groups="su_sms_integrated.group_sms_system_admin"/>
+                    <field name="object_code" groups="su_sms_integrated.group_sms_system_admin"/>
                 </xpath>
             </field>
         </record>

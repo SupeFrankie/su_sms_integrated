@@ -1,4 +1,4 @@
-# Strathmore University SMS Module (su_sms)
+# Strathmore University SMS Module (su_sms_integrated)
 
 ## Overview
 The SU SMS Module is a custom Odoo 19 application designed to manage the university's internal and external SMS communications. It integrates directly with the Africa's Talking API to provide a cost-effective, reliable messaging service for students, staff, and faculty departments.
@@ -60,7 +60,7 @@ ldap3>=2.9.1
 
 ### Module Structure
 ```
-su_sms/
+su_sms_integrated/
 ├── __init__.py
 ├── __manifest__.py
 ├── controllers/
@@ -172,11 +172,11 @@ DATASERVICE_USE_MOCK=false
 #### Option A: Manual Installation
 ```bash
 # Copy module to Odoo addons directory
-cp -r su_sms /path/to/odoo/addons/
+cp -r su_sms_integrated /path/to/odoo/addons/
 
 # Set proper permissions
-chown -R odoo:odoo /path/to/odoo/addons/su_sms
-chmod -R 755 /path/to/odoo/addons/su_sms
+chown -R odoo:odoo /path/to/odoo/addons/su_sms_integrated
+chmod -R 755 /path/to/odoo/addons/su_sms_integrated
 
 # Restart Odoo
 sudo systemctl restart odoo
@@ -188,7 +188,7 @@ sudo systemctl restart odoo
 #### Option B: Command Line Installation
 ```bash
 # Install module directly
-./odoo-bin -c /etc/odoo/odoo.conf -i su_sms -d your_database --stop-after-init
+./odoo-bin -c /etc/odoo/odoo.conf -i su_sms_integrated -d your_database --stop-after-init
 
 # Restart Odoo service
 sudo systemctl restart odoo
@@ -611,10 +611,10 @@ grep "LDAP" /var/log/odoo/odoo-server.log
 #### Module Updates
 ```bash
 # Update module code
-cp -r su_sms /path/to/odoo/addons/
+cp -r su_sms_integrated /path/to/odoo/addons/
 
 # Upgrade module in database
-./odoo-bin -c /etc/odoo/odoo.conf -u su_sms -d your_database --stop-after-init
+./odoo-bin -c /etc/odoo/odoo.conf -u su_sms_integrated -d your_database --stop-after-init
 
 # Restart Odoo
 sudo systemctl restart odoo

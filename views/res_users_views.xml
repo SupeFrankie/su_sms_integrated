@@ -8,7 +8,7 @@
             <field name="arch" type="xml">
                 <!-- Add SMS Access tab after Preferences -->
                 <xpath expr="//page[@name='preferences']" position="after">
-                    <page string="SMS Access" name="sms_access" groups="su_sms.group_sms_system_admin">
+                    <page string="SMS Access" name="sms_access" groups="su_sms_integrated.group_sms_system_admin">
                         <group>
                             <group string="SMS Department">
                                 <field name="department_id" 

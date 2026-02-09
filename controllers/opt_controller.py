@@ -20,7 +20,7 @@ class SmsOptOutController(http.Controller):
     
     def _render_response(self, template, message, status, phone_number):
         """Helper method to render responses"""
-        full_template = f'su_sms.{template}'
+        full_template = f'su_sms_integrated.{template}'
         return request.render(full_template, {
             'message': message,
             'status': status,
@@ -126,7 +126,7 @@ class SmsOptOutController(http.Controller):
     @http.route('/sms/status', type='http', auth='public', website=True)
     def check_opt_status(self):
         """Page to check opt-out status"""
-        return request.render('su_sms.sms_status_check_page')
+        return request.render('su_sms_integrated.sms_status_check_page')
     
 
     @http.route('/sms/check_status', type='jsonrpc', auth='public', csrf=False)

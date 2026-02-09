@@ -3,7 +3,7 @@
     <data>
         <menuitem id="menu_sms_marketing_root"
                   name="SU SMS System"
-                  web_icon="su_sms,static/description/icon.png"
+                  web_icon="su_sms_integrated,static/description/icon.png"
                   sequence="5"
                   groups="group_sms_basic_user"/>
 

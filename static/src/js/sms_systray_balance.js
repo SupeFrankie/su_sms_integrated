@@ -5,7 +5,7 @@ import { useService } from "@web/core/utils/hooks";
 import { Component, useState, onWillStart } from "@odoo/owl";
 
 export class SMSBalanceSystray extends Component {
-    static template = "su_sms.SMSBalanceSystray";
+    static template = "su_sms_integrated.SMSBalanceSystray";
     
     setup() {
         this.orm = useService("orm");  // FIX: Changed from "rpc" to "orm"

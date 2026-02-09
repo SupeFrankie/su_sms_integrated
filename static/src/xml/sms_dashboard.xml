@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="su_sms.dashboard_template">
+    <t t-name="su_sms_integrated.dashboard_template">
         <div class="sms_dashboard_container">
             <div class="sms_sidebar">
                 <div class="sidebar_header">
@@ -59,19 +59,19 @@
 
                 <h3>Quick Actions</h3>
                 <div class="row action_grid">
-                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms.action_sms_staff')">
+                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms_integrated.action_sms_staff')">
                         <div class="action_box">
                             <i class="fa fa-user-tie fa-3x"/>
                             <h4>Message Staff</h4>
                         </div>
                     </div>
-                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms.action_sms_student')">
+                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms_integrated.action_sms_student')">
                         <div class="action_box">
                             <i class="fa fa-graduation-cap fa-3x"/>
                             <h4>Message Students</h4>
                         </div>
                     </div>
-                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms.action_sms_adhoc')">
+                    <div class="col-md-4" t-on-click="() => this.openAction('su_sms_integrated.action_sms_adhoc')">
                         <div class="action_box">
                             <i class="fa fa-paper-plane fa-3x"/>
                             <h4>Ad Hoc SMS</h4>

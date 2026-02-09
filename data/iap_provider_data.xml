@@ -4,7 +4,7 @@
         <record id="iap_account_africas_talking" model="iap.account">
             <field name="service_id" ref="sms.iap_service_sms"/>
             <field name="provider">africas_talking</field>
-            <field name="account_token">su_sms_africas_talking</field>
+            <field name="account_token">su_sms_integrated_africas_talking</field>
         </record>
     </data>
 </odoo>

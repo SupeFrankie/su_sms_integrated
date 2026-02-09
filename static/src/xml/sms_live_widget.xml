@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="su_sms.SMSLiveWidget" t-inherit="web.TextField" owl="1">
+    <t t-name="su_sms_integrated.SMSLiveWidget" t-inherit="web.TextField" owl="1">
         <xpath expr="//div[hasclass('o_field_widget')]" position="inside">
             <div class="d-flex justify-content-between mt-1 text-muted small">
                 <span t-if="state.charCount > 160" class="text-warning">

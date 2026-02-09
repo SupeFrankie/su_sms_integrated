@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="su_sms.SMSBalanceSystray">
+    <t t-name="su_sms_integrated.SMSBalanceSystray">
         <div class="o_systray_item d-flex align-items-center px-2" title="SMS Credit Balance">
             <i class="fa fa-money text-warning me-1"/>
             <span class="fw-bold text-white badge bg-primary">

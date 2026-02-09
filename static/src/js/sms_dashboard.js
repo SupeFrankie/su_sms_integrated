@@ -49,5 +49,5 @@ export class SMSDashboard extends Component {
     }
 }
 
-SMSDashboard.template = "su_sms.dashboard_template";
+SMSDashboard.template = "su_sms_integrated.dashboard_template";
 registry.category("actions").add("sms_dashboard_client", SMSDashboard);
