@@ -1,72 +1,44 @@
 # models/__init__.py
 """
-Models Package - Import Order Matters!
-NO circular dependencies - each import only depends on models imported above it.
+REFACTORED: Removed parallel SMS implementations
 """
 
-# ============================================
-# LEVEL 1: Base models (no dependencies)
-# ============================================
-from . import sms_type
+# Base models
 from . import sms_blacklist
-from . import sms_gateway_config
-from . import sms_dashboard  # Stats model (no dependencies)
+from . import sms_gateway_config  # TO BE REFACTORED INTO IAP
+from . import sms_dashboard
 
-# ============================================
-# LEVEL 2: Odoo core extensions
-# ============================================
-from . import hr_department  # Extends hr.department
-from . import res_partner     # Extends res.partner
-from . import res_users       # Extends res.users (depends on res_partner, hr_department)
+# Odoo core extensions
+from . import hr_department
+from . import res_partner
+from . import res_users
 
-# ============================================
-# LEVEL 3: SMS contacts and templates
-# ============================================
-from . import sms_contact     # Depends on hr_department
-from . import sms_template    # No dependencies
+# Strathmore-specific (KEEP)
+from . import sms_department
+from . import sms_administrator
+from . import sms_department_expenditure
 
-# ============================================
-# LEVEL 4: Mailing lists (depends on contacts)
-# ============================================
-from . import sms_mailing_list  # Depends on sms_contact
+# NEW: IAP Integration
+from . import iap_africas_talking
+from . import sms_balance
+from . import odoo_sms_integration  # ENHANCED
 
-# ============================================
-# LEVEL 5: Campaigns and recipients
-# ============================================
-from . import sms_campaign    # Depends on sms_gateway_config, sms_contact
-from . import sms_recipient   # Depends on sms_campaign
+# NEW: Academic structure
+from . import su_school
+from . import su_program
+from . import su_course
+from . import su_academic_year
+from . import su_intake
 
-# ============================================
-# LEVEL 6: Department and administrators
-# ============================================
-from . import sms_department       # Depends on hr_department
-from . import sms_administrator    # Depends on res_users, sms_department
+# NEW: Web service connector
+from . import webservice_connector
 
-# ============================================
-# LEVEL 7: Messages (depends on campaigns)
-# ============================================
-from . import sms_message     # Depends on sms_administrator
-from . import sms_detail      # Depends on sms_message
-
-# ============================================
-# LEVEL 8: Filter wizards
-# ============================================
-from . import sms_staff_filter    # Depends on hr_department
-from . import sms_student_filter  # Depends on hr_department
-
-# ============================================
-# LEVEL 9: Reporting views (depends on everything)
-# ============================================
-from . import sms_department_expenditure  # Database view - load last
-
-# ============================================
-# LEVEL 10: Other models
-# ============================================
-from . import sms_incoming    
-from . import mock_webservice 
-
-# ===========================================
-# LEVEL 11: New Addition
-# ===========================================
-from . import sms_iap_provider #changes In-App-Purchase Provider
-from . import odoo_sms_integration # Integrates existing odoo_sms module
+# ARCHIVED (commented out):
+# from . import sms_message      # → Use sms.sms
+# from . import sms_campaign     # → Use mailing.mailing
+# from . import sms_recipient    # → Use sms.sms (one per recipient)
+# from . import sms_detail       # → Merged into sms.sms
+# from . import sms_queue        # → Use sms.sms state machine
+# from . import sms_contact      # → Use mailing.contact
+# from . import sms_mailing_list # → Use mailing.list
+# from . import sms_type         # → Selection field on sms.sms
