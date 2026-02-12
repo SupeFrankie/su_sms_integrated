@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sms_student_wizard_form" model="ir.ui.view">
+        <field name="name">sms.student.wizard.form</field>
+        <field name="model">sms.student.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Student SMS">
+                <sheet>
+                    <group>
+                        <group string="Academic Filters">
+                            <field name="school_id"/>
+                            <field name="program_id"/>
+                            <field name="course_id"/>
+                            <field name="academic_year_id"/>
+                            <field name="student_year"/>
+                            <field name="intake_id"/>
+                        </group>
+                        <group string="Modular Filters">
+                            <field name="enrolment_period_id"/>
+                            <field name="module_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Recipients">
+                            <field name="send_to_students"/>
+                            <field name="send_to_fathers"/>
+                            <field name="send_to_mothers"/>
+                        </group>
+                        <group>
+                            <field name="recipient_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="template_id"/>
+                        <field name="body" widget="text"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send_sms" string="Send SMS" 
+                            type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sms_student_wizard" model="ir.actions.act_window">
+        <field name="name">Student SMS</field>
+        <field name="res_model">sms.student.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

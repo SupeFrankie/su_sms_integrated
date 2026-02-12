@@ -3,6 +3,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+import re
 
 
 class SmsManualWizard(models.TransientModel):
@@ -12,16 +13,11 @@ class SmsManualWizard(models.TransientModel):
     phone_numbers = fields.Text(
         string='Phone Numbers',
         required=True,
-        help='Enter comma-separated phone numbers (e.g., 0712345678, 0723456789)'
+        help='Enter comma-separated phone numbers'
     )
-    
     template_id = fields.Many2one('sms.template', string='Template')
     body = fields.Text(string='Message', required=True)
-    
-    recipient_count = fields.Integer(
-        string='Recipients',
-        compute='_compute_recipient_count'
-    )
+    recipient_count = fields.Integer(compute='_compute_recipient_count')
     
     @api.onchange('template_id')
     def _onchange_template_id(self):
@@ -38,34 +34,32 @@ class SmsManualWizard(models.TransientModel):
                 wizard.recipient_count = 0
     
     def action_send_sms(self):
-        """Send SMS to manually entered numbers"""
         self.ensure_one()
         
-        # Parse numbers
         numbers = [n.strip() for n in self.phone_numbers.split(',') if n.strip()]
         
         if not numbers:
             raise UserError(_('Please enter at least one phone number'))
         
-        # Get billing department
         admin = self.env['sms.administrator'].search([
             ('user_id', '=', self.env.user.id)
         ], limit=1)
         
-        # Create sms.sms records
         sms_records = self.env['sms.sms']
         for number in numbers:
-            normalized = self._normalize_phone(number)
-            if normalized:
+            try:
+                normalized = self._normalize_phone(number)
                 sms_records |= self.env['sms.sms'].create({
                     'number': normalized,
                     'body': self.body,
                     'su_sms_type': 'manual',
                     'su_department_id': admin.department_id.id if admin else False,
                 })
+            except:
+                continue
         
         if not sms_records:
-            raise UserError(_('No valid phone numbers found'))
+            raise UserError(_('No valid phone numbers'))
         
         sms_records.send()
         
@@ -74,17 +68,14 @@ class SmsManualWizard(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': _('SMS Sent'),
-                'message': _(f'{len(sms_records)} SMS messages queued'),
+                'message': _(f'{len(sms_records)} SMS queued'),
                 'type': 'success',
                 'next': {'type': 'ir.actions.act_window_close'}
             }
         }
     
     def _normalize_phone(self, number):
-        """Normalize to +254 format"""
-        if not number:
-            return False
-        number = number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        number = re.sub(r'[^\d+]', '', number)
         if number.startswith('0'):
             return '+254' + number[1:]
         elif not number.startswith('+'):

@@ -5,31 +5,59 @@
         <field name="model">sms.import.wizard</field>
         <field name="arch" type="xml">
             <form string="Import Recipients">
-                <group>
-                    <field name="import_file" widget="binary" height="64"/>
-                    <field name="file_name" invisible="1"/>
-                </group>
-                
-                <div class="alert alert-danger" role="alert" invisible="not has_error">
-                    <field name="error_message" readonly="1" nolabel="1"/>
-                </div>
-
-                <div class="alert alert-info" role="alert" invisible="not import_file or has_error">
-                    <strong>Preview (First 10 Rows):</strong>
-                    <field name="preview_data" readonly="1" nolabel="1"/>
-                </div>
-
-                <footer>
-                    <button string="Download Template" name="action_download_template" type="object" class="btn-secondary"/>
-                    <button string="Import" name="action_import" type="object" class="btn-primary" invisible="not import_file or has_error"/>
-                    <button string="Cancel" class="btn-secondary" special="cancel"/>
-                </footer>
+                <header>
+                    <button name="action_download_template" string="Download Template" 
+                            type="object" class="btn-secondary" 
+                            invisible="state != 'upload'"/>
+                    <button name="action_parse_csv" string="Parse CSV" 
+                            type="object" class="btn-primary" 
+                            invisible="state != 'upload'"/>
+                    <button name="action_proceed_to_compose" string="Next: Compose Message" 
+                            type="object" class="btn-primary" 
+                            invisible="state != 'preview'"/>
+                    <button name="action_send_sms" string="Send SMS" 
+                            type="object" class="btn-primary" 
+                            invisible="state != 'compose'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group invisible="state != 'upload'">
+                        <field name="import_file" widget="binary" filename="file_name"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                    
+                    <group invisible="state != 'preview'">
+                        <group>
+                            <field name="valid_count" readonly="1"/>
+                            <field name="invalid_count" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook invisible="state != 'preview'">
+                        <page string="Imported Contacts">
+                            <field name="line_ids" nolabel="1">
+                                <list editable="bottom" decoration-danger="not is_valid">
+                                    <field name="first_name"/>
+                                    <field name="last_name"/>
+                                    <field name="phone_number"/>
+                                    <field name="is_valid" invisible="1"/>
+                                    <field name="error_message" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    
+                    <group invisible="state != 'compose'">
+                        <field name="template_id"/>
+                        <field name="body" widget="text"/>
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>
 
     <record id="action_sms_import_wizard" model="ir.actions.act_window">
-        <field name="name">Import Recipients</field>
+        <field name="name">Ad Hoc SMS</field>
         <field name="res_model">sms.import.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>

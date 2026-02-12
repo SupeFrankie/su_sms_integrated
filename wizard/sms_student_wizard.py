@@ -4,18 +4,17 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import requests
+import os
 
 
 class SmsStudentWizard(models.TransientModel):
     _name = 'sms.student.wizard'
     _description = 'Student SMS Wizard'
     
-    # Filters (matches PHP system Section 5)
     school_id = fields.Many2one('su.school', string='School')
     program_id = fields.Many2one('su.program', string='Program')
     course_id = fields.Many2one('su.course', string='Course')
     academic_year_id = fields.Many2one('su.academic.year', string='Academic Year')
-    
     student_year = fields.Selection([
         ('1', 'Year 1'),
         ('2', 'Year 2'),
@@ -23,38 +22,24 @@ class SmsStudentWizard(models.TransientModel):
         ('4', 'Year 4'),
         ('5', 'Year 5')
     ], string='Student Year')
-    
     intake_id = fields.Many2one('su.intake', string='Intake')
-    
-    # Modular program filters
-    enrolment_period_id = fields.Many2one(
-        'su.enrolment.period',
-        string='Enrolment Period'
-    )
+    enrolment_period_id = fields.Many2one('su.enrolment.period', string='Enrolment Period')
     module_id = fields.Many2one('su.module', string='Module')
     
-    # Recipient groups (CRITICAL: matches 2017 manual exactly)
     send_to_students = fields.Boolean(string='Students', default=True)
     send_to_fathers = fields.Boolean(string='Fathers', default=False)
     send_to_mothers = fields.Boolean(string='Mothers', default=False)
     
-    # Message
     template_id = fields.Many2one('sms.template', string='Template')
     body = fields.Text(string='Message', required=True)
-    
-    # Preview
-    recipient_count = fields.Integer(
-        string='Total Recipients',
-        compute='_compute_recipients'
-    )
+    recipient_count = fields.Integer(compute='_compute_recipients')
     
     @api.onchange('template_id')
     def _onchange_template_id(self):
         if self.template_id:
             self.body = self.template_id.body
     
-    @api.depends('school_id', 'program_id', 'send_to_students', 
-                 'send_to_fathers', 'send_to_mothers')
+    @api.depends('school_id', 'send_to_students', 'send_to_fathers', 'send_to_mothers')
     def _compute_recipients(self):
         for wizard in self:
             try:
@@ -71,20 +56,16 @@ class SmsStudentWizard(models.TransientModel):
                 wizard.recipient_count = 0
     
     def action_send_sms(self):
-        """Send SMS to students and/or parents"""
         self.ensure_one()
         
-        # Validation
         if not (self.send_to_students or self.send_to_fathers or self.send_to_mothers):
-            raise UserError(_('Please select at least one recipient group'))
+            raise UserError(_('Select at least one recipient group'))
         
-        # Fetch students from AMS
         students = self._fetch_students()
         
         if not students:
-            raise UserError(_('No students match your filters'))
+            raise UserError(_('No students match filters'))
         
-        # Build recipient list
         recipients = []
         
         if self.send_to_students:
@@ -114,12 +95,10 @@ class SmsStudentWizard(models.TransientModel):
                         'type': 'parent_mother'
                     })
         
-        # Get billing department
         admin = self.env['sms.administrator'].search([
             ('user_id', '=', self.env.user.id)
         ], limit=1)
         
-        # Create sms.sms records
         sms_records = self.env['sms.sms']
         for recipient in recipients:
             sms_records |= self.env['sms.sms'].create({
@@ -136,18 +115,14 @@ class SmsStudentWizard(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': _('SMS Queued'),
-                'message': _(f'{len(recipients)} SMS messages queued'),
+                'message': _(f'{len(recipients)} SMS queued'),
                 'type': 'success',
                 'next': {'type': 'ir.actions.act_window_close'}
             }
         }
     
     def _fetch_students(self):
-        """Call AMS web service"""
-        base_url = self.env['ir.config_parameter'].sudo().get_param(
-            'su_sms.webservice_base_url'
-        )
-        
+        base_url = os.getenv('STUDENT_DATASERVICE_URL', 'http://localhost')
         params = {}
         
         if self.school_id:
@@ -163,7 +138,6 @@ class SmsStudentWizard(models.TransientModel):
         if self.intake_id:
             params['intake_id'] = self.intake_id.external_id
         
-        # Determine endpoint based on program type
         if self.enrolment_period_id or self.module_id:
             endpoint = 'student/getStudentsModular'
             if self.enrolment_period_id:
@@ -180,11 +154,10 @@ class SmsStudentWizard(models.TransientModel):
             response.raise_for_status()
             data = response.json()
             return data.get('students', [])
-        except Exception as e:
-            raise UserError(_(f'Failed to fetch student data: {e}'))
+        except:
+            return []
     
     def _normalize_phone(self, number):
-        """Normalize to +254 format"""
         if not number:
             return False
         number = number.replace(' ', '').replace('-', '')
