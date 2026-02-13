@@ -14,6 +14,9 @@
         'hr',
         'sms',
         'iap',
+        'marketing_automation',
+        'sms_marketing',
+        'auth_ldap',
     ],
     
     'data': [
