@@ -10,7 +10,7 @@ class SMSAdministrator(models.Model):
     
     user_id = fields.Many2one('res.users', string='User', required=True, 
                               ondelete='cascade', index=True)
-    department_id = fields.Many2one('sms.department', string='Finance Department', 
+    department_id = fields.Many2one('hr.department', string='Finance Department', 
                                     required=True, ondelete='restrict')
     phone = fields.Char(string='Admin Phone', 
                         help='Administrator phone (receives copy of sent SMS)')
