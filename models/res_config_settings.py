@@ -8,20 +8,20 @@ class ResConfigSettings(models.TransientModel):
     
     # ===== Africa's Talking Settings =====
     at_username = fields.Char(
-        string='AT Username',
-        config_parameter='su_sms.at_username'
+    related='company_id.at_username',
+    readonly=False,
     )
-    
+
     at_api_key = fields.Char(
-        string='AT API Key',
-        config_parameter='su_sms.at_api_key'
+        related='company_id.at_api_key',
+        readonly=False,
     )
-    
+
     at_sender_id = fields.Char(
-        string='AT Sender ID',
-        config_parameter='su_sms.at_sender_id',
-        help="Optional custom sender ID"
+        related='company_id.at_sender_id',
+        readonly=False,
     )
+
     
     # ===== LDAP Settings =====
     ldap_server = fields.Char(

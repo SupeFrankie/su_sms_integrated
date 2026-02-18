@@ -93,24 +93,25 @@ class ResPartner(models.Model):
     def action_send_sms(self):
         self.ensure_one()
 
-        mobile = self._get_mobile_number()
+        mobile = self.mobile or self.phone
         if not mobile:
             raise UserError(_('No mobile number found.'))
-
-        if self.sms_blacklisted:
-            raise UserError(_('This contact is blacklisted.'))
 
         return {
             'type': 'ir.actions.act_window',
             'name': _('Send SMS'),
-            'res_model': 'sms.sms',
+            'res_model': 'sms.composer',
             'view_mode': 'form',
             'target': 'new',
             'context': {
-                'default_number': mobile,
-                'default_partner_id': self.id,
+                'default_composition_mode': 'comment',
+                'default_res_model': 'res.partner',
+                'default_res_ids': self.ids,
+                'default_number_field_name': 'mobile',
             }
         }
+
+
 
     # ---------------------------------------------------------
     # History

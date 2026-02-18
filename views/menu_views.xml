@@ -9,6 +9,20 @@
                   web_icon="su_sms_integrated,static/description/icon.png"
                   groups="su_sms_integrated.group_sms_basic_user"/>
 
+         <!-- Native SMS Action -->
+        <record id="action_sms_sms_native" model="ir.actions.act_window">
+            <field name="name">All SMS</field>
+            <field name="res_model">sms.sms</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <menuitem id="menu_sms_sms_native"
+                  name="All SMS"
+                  parent="menu_sms_marketing_root"
+                  action="action_sms_sms_native"
+                  sequence="5"
+                  groups="su_sms_integrated.group_sms_administrator"/>          
+
         <!-- Top-level entries -->
         <menuitem id="menu_sms_administrators"
                   name="Administrators"

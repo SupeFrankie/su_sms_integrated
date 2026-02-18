@@ -6,7 +6,6 @@ from odoo.exceptions import ValidationError
 class SMSAdministrator(models.Model):
     _name = 'sms.administrator'
     _description = 'SMS Administrator'
-    _inherits = {'res.users': 'user_id'}
     
     user_id = fields.Many2one('res.users', string='User', required=True, 
                               ondelete='cascade', index=True)

@@ -2,6 +2,7 @@
 <odoo>
     <record id="group_sms_basic_user" model="res.groups">
         <field name="name">Basic User</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         <field name="comment">Can send adhoc SMS only</field>
     </record>
     

@@ -29,6 +29,7 @@
         'wizard/sms_manual_wizard_views.xml',
 
         # Views 
+        'views/res_config_settings_views.xml',
         'views/sms_administrator_views.xml',
         'views/sms_department_expenditure_views.xml',
         'views/res_users_views.xml',
