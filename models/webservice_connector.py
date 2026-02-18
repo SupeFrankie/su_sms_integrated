@@ -1,4 +1,6 @@
 # models/webservice_connector.py
+
+
 """
 Strathmore University Data Adapter
 ===================================
@@ -17,12 +19,18 @@ import os
 
 _logger = logging.getLogger(__name__)
 
+# Guard catches both ImportError (ldap3 not installed) and any import-time
+# exception from ldap3's dependencies (e.g. pyasn1 DeprecationWarning
+# promoted to an error in some Python/pyasn1 version combinations).
 try:
     from ldap3 import Server, Connection, ALL, SIMPLE
     LDAP_AVAILABLE = True
-except ImportError:
+except Exception:
     LDAP_AVAILABLE = False
-    _logger.warning("ldap3 not installed")
+    _logger.warning(
+        "ldap3 not available or failed to import (pyasn1 compatibility issue). "
+        "LDAP authentication will be disabled."
+    )
 
 
 class WebServiceAdapter(models.AbstractModel):

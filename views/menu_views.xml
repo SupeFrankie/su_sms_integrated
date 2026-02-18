@@ -1,29 +1,66 @@
-<menuitem id="menu_sms_marketing_config"
-          name="Configuration"
-          parent="menu_sms_marketing_root"
-          sequence="100"
-          groups="su_sms_integrated.group_sms_system_admin"/>
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
 
-<menuitem id="menu_sms_template"
-          name="Templates"
-          parent="menu_sms_marketing_config"
-          action="action_sms_template"
-          groups="su_sms_integrated.group_sms_administrator,su_sms_integrated.group_sms_system_admin"/>
+        <!-- Root application menu -->
+        <menuitem id="menu_sms_marketing_root"
+                  name="SU SMS"
+                  sequence="80"
+                  web_icon="su_sms_integrated,static/description/icon.png"
+                  groups="su_sms_integrated.group_sms_basic_user"/>
 
-<menuitem id="menu_sms_gateway"
-          name="Gateway Settings"
-          parent="menu_sms_marketing_config"
-          action="action_sms_gateway_configuration"
-          groups="su_sms_integrated.group_sms_system_admin"/>
+        <!-- Top-level entries -->
+        <menuitem id="menu_sms_administrators"
+                  name="Administrators"
+                  parent="menu_sms_marketing_root"
+                  action="action_sms_administrator"
+                  sequence="10"
+                  groups="su_sms_integrated.group_sms_administrator"/>
 
-<menuitem id="menu_test_ldap"
-          name="Test LDAP Connection"
-          parent="menu_sms_marketing_config"
-          action="action_test_ldap"
-          groups="su_sms_integrated.group_sms_system_admin"/>
+        <menuitem id="menu_su_sms_log"
+                  name="SMS Logs"
+                  parent="menu_sms_marketing_root"
+                  action="action_su_sms_log"
+                  sequence="20"
+                  groups="su_sms_integrated.group_sms_basic_user"/>
 
-<menuitem id="menu_test_all_services"
-          name="Test All Services"
-          parent="menu_sms_marketing_config"
-          action="action_test_all_services"
-          groups="su_sms_integrated.group_sms_system_admin"/>
+        <menuitem id="menu_sms_department_expenditure_main"
+                  name="Expenditure"
+                  parent="menu_sms_marketing_root"
+                  action="action_sms_department_expenditure"
+                  sequence="30"
+                  groups="su_sms_integrated.group_sms_administrator"/>
+
+        <!-- Configuration sub-menu -->
+        <menuitem id="menu_sms_marketing_config"
+                  name="Configuration"
+                  parent="menu_sms_marketing_root"
+                  sequence="100"
+                  groups="su_sms_integrated.group_sms_system_admin"/>
+
+        <menuitem id="menu_sms_template"
+                  name="Templates"
+                  parent="menu_sms_marketing_config"
+                  action="action_sms_template"
+                  groups="su_sms_integrated.group_sms_administrator,su_sms_integrated.group_sms_system_admin"/>
+
+        <menuitem id="menu_sms_blacklist"
+                  name="Blacklist"
+                  parent="menu_sms_marketing_config"
+                  action="action_sms_blacklist"
+                  groups="su_sms_integrated.group_sms_administrator"/>
+
+        <!-- <menuitem id="menu_test_ldap"
+                  name="Test LDAP Connection"
+                  parent="menu_sms_marketing_config"
+                  action="action_test_ldap"
+                  groups="su_sms_integrated.group_sms_system_admin"/> -->
+
+        <!--<menuitem id="menu_test_all_services"
+                  name="Test All Services"
+                  parent="menu_sms_marketing_config"
+                  action="action_test_all_services"
+                  groups="su_sms_integrated.group_sms_system_admin"/> -->
+
+    </data>
+</odoo>

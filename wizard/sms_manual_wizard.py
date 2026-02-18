@@ -15,7 +15,7 @@ class SmsManualWizard(models.TransientModel):
         required=True,
         help='Enter comma-separated phone numbers'
     )
-    template_id = fields.Many2one('sms.template', string='Template')
+    template_id = fields.Many2one('su.sms.template', string='Template')
     body = fields.Text(string='Message', required=True)
     recipient_count = fields.Integer(compute='_compute_recipient_count')
     

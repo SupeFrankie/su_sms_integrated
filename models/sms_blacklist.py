@@ -4,7 +4,7 @@ from odoo import models, fields, api, exceptions, _
 import re
 
 class SMSBlacklist(models.Model):
-    _name = 'sms.blacklist'
+    _name = 'su.sms.blacklist'
     _description = 'SMS Blacklist - Opt-out Management'
     _order = 'create_date desc'
     

@@ -3,7 +3,7 @@ from odoo.exceptions import UserError
 import re
 
 class SmsTemplate(models.Model):
-    _name = 'sms.template'
+    _name = 'su.sms.template'
     _description = 'SMS Template'
     _order = 'name'
 

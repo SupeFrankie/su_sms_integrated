@@ -1,76 +1,78 @@
 # controllers/webhook_controller.py
 
-from odoo import http, fields
+from odoo import http
 from odoo.http import request
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
 
 class SmsWebhookController(http.Controller):
-    
-    @http.route('/sms/webhook/delivery', type='http', auth='public', methods=['POST'], csrf=False)
-    def sms_delivery_webhook(self, **kwargs):
+
+    @http.route(
+        '/sms/webhook/delivery/<string:uuid>',
+        type='http',
+        auth='public',
+        methods=['POST'],
+        csrf=False
+    )
+    def sms_delivery_webhook(self, uuid, **kwargs):
+        """
+        Delivery confirmation endpoint from Africa's Talking.
+
+        Update sms.tracker
+        Keeps aligned with Odoo's native SMS engine.
+        """
+
         try:
-            _logger.info(f'Delivery webhook received: {kwargs}')
-            
-            message_id = kwargs.get('id')
+            _logger.info(f"Delivery webhook received for UUID {uuid}: {kwargs}")
+
+            #  Basic UUID check 
+            if not re.match(r'^[0-9a-f]{32}$', uuid):
+                _logger.warning(f"Invalid UUID format: {uuid}")
+                return "Invalid UUID"
+
             status = kwargs.get('status')
-            phone_number = kwargs.get('phoneNumber')
-            
-            if not message_id:
-                return 'Missing message ID'
-            
-            recipient = request.env['sms.recipient'].sudo().search([
-                ('gateway_message_id', '=', message_id)
+            error_code = kwargs.get('errorCode')
+            error_message = kwargs.get('errorMessage')
+
+            if not status:
+                return "Missing status"
+
+            # Find tracker record 
+            tracker = request.env['sms.tracker'].sudo().search([
+                ('sms_uuid', '=', uuid)
             ], limit=1)
-            
-            if not recipient:
-                _logger.warning(f'Recipient not found for message ID: {message_id}')
-                return 'Recipient not found'
-            
+
+            if not tracker:
+                _logger.warning(f"No tracker found for UUID: {uuid}")
+                return "OK"  # still return OK so AT doesn't retry forever
+
+            # Map Africa's Talking status to Odoo state 
             status_map = {
                 'Success': 'sent',
                 'Sent': 'sent',
-                'Delivered': 'delivered',
-                'Failed': 'failed',
-                'Rejected': 'failed'
+                'Delivered': 'sent',
+                'Submitted': 'pending',
+                'Queued': 'outgoing',
+                'Failed': 'error',
+                'Rejected': 'error',
             }
-            
-            new_status = status_map.get(status, 'failed')
-            
-            recipient.write({
-                'status': new_status,
-                'delivered_date': fields.Datetime.now() if new_status == 'delivered' else False,
-                'error_message': kwargs.get('failureReason') if new_status == 'failed' else False
-            })
-            
-            return 'OK'
-            
+
+            new_state = status_map.get(status, 'error')
+
+            if new_state == 'error':
+                # Let Odoo handle proper failure logic
+                tracker.with_context(
+                    sms_known_failure_reason=error_message
+                )._action_update_from_provider_error('unknown')
+
+            else:
+                tracker._action_update_from_sms_state(new_state)
+
+            return "OK"
+
         except Exception as e:
-            _logger.error(f'Webhook error: {str(e)}')
-            return f'Error: {str(e)}'
-    
-    @http.route('/sms/webhook/incoming', type='http', auth='public', methods=['POST'], csrf=False)
-    def sms_incoming_webhook(self, **kwargs):
-        try:
-            _logger.info(f'Incoming SMS: {kwargs}')
-            
-            from_number = kwargs.get('from')
-            message = kwargs.get('text')
-            date = kwargs.get('date')
-            
-            if not from_number or not message:
-                return 'Missing required fields'
-            
-            request.env['sms.incoming.message'].sudo().create({
-                'phone_number': from_number,
-                'message': message,
-                'received_date': date or fields.Datetime.now()
-            })
-            
-            return 'OK'
-            
-        except Exception as e:
-            _logger.error(f'Incoming SMS error: {str(e)}')
-            return f'Error: {str(e)}'
+            _logger.error(f"Delivery webhook error: {str(e)}")
+            return "Error"

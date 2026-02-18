@@ -9,7 +9,7 @@ _logger = logging.getLogger(__name__)
 
 
 class SmsBalance(models.TransientModel):
-    _name = 'sms.balance'
+    _name = 'su.sms.balance'
     _description = 'SMS Balance Monitor'
     
     @api.model

@@ -6,7 +6,7 @@
             <field name="name">Birthday Wishes</field>
             <field name="template_type">birthday</field>
             <field name="model_id" ref="base.model_res_partner"/>
-            <field name="body">Happy Birthday ${object.name}! 🎉 Wishing you a wonderful day filled with joy and success. Best wishes from strathmore university!</field>
+            <field name="body">Happy Birthday ${object.name}!  Wishing you a wonderful day filled with joy and success. Best wishes from strathmore university!</field>
             <field name="active">True</field>
         </record>
 

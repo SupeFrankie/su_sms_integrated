@@ -1,4 +1,6 @@
 # controllers/opt_controller.py
+
+
 from odoo import http
 from odoo.http import request
 import logging
@@ -33,7 +35,7 @@ class SmsOptOutController(http.Controller):
         try:
             phone_number = self._validate_phone_number(phone_number)
             
-            existing = request.env['sms.blacklist'].sudo().search([
+            existing = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)
@@ -46,7 +48,7 @@ class SmsOptOutController(http.Controller):
                     phone_number
                 )
             
-            request.env['sms.blacklist'].sudo().create({
+            request.env['su.sms.blacklist'].sudo().create({
                 'phone_number': phone_number,
                 'reason': 'user_request',
                 'notes': 'User opted out via web link',
@@ -84,7 +86,7 @@ class SmsOptOutController(http.Controller):
         try:
             phone_number = self._validate_phone_number(phone_number)
             
-            blacklist_entry = request.env['sms.blacklist'].sudo().search([
+            blacklist_entry = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)
@@ -135,7 +137,7 @@ class SmsOptOutController(http.Controller):
         try:
             phone_number = self._validate_phone_number(phone_number)
             
-            blacklisted = request.env['sms.blacklist'].sudo().search([
+            blacklisted = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)

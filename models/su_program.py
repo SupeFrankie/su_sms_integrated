@@ -4,7 +4,7 @@ from odoo import models, fields
 
 class SuProgram(models.Model):
     _name = 'su.program'
-    _description = 'Strathmore Program'
+    _description = 'School Program'
 
     name = fields.Char(required=True)
     external_id = fields.Char(required=True)

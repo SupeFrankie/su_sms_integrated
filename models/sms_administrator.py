@@ -16,7 +16,7 @@ class SMSAdministrator(models.Model):
                         help='Administrator phone (receives copy of sent SMS)')
     active = fields.Boolean(default=True)
     
-    message_ids = fields.One2many('sms.message', 'administrator_id', string='Sent Messages')
+    log_ids = fields.One2many('su.sms.log', 'sender_id', string='Sent Messages')
     total_messages = fields.Integer(string='Total Messages', compute='_compute_totals')
     total_spent = fields.Float(string='Total Spent', compute='_compute_totals')
     
@@ -33,18 +33,18 @@ class SMSAdministrator(models.Model):
             if existing:
                 raise ValidationError('A user can only have one SMS administrator record!')
     
-    @api.depends('message_ids')
+    @api.depends('log_ids')
     def _compute_totals(self):
         for admin in self:
-            admin.total_messages = len(admin.message_ids)
-            admin.total_spent = sum(admin.message_ids.mapped('total_cost'))
+            admin.total_messages = len(admin.log_ids)
+            admin.total_spent = sum(admin.log_ids.mapped('cost'))
     
     def action_view_messages(self):
         return {
             'type': 'ir.actions.act_window',
             'name': 'SMS Messages',
-            'res_model': 'sms.message',
+            'res_model': 'su.sms.log',
             'view_mode': 'list,form',
-            'domain': [('administrator_id', '=', self.id)],
-            'context': {'default_administrator_id': self.id}
+            'domain': [('sender_id', '=', self.id)],
+            'view_mode': 'list,form',
         }

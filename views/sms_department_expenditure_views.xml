@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Department Expenditure list View -->
+
         <record id="view_sms_department_expenditure_list" model="ir.ui.view">
-            <field name="name">sms.department.expenditure.list</field>
-            <field name="model">sms.department.expenditure</field>
+            <field name="name">su.sms.department.expenditure.list</field>
+            <field name="model">su.sms.department.expenditure</field>
             <field name="arch" type="xml">
-                <list string="Department SMS Expenditure" create="false" edit="false" delete="false">
-                    <field name="department_name"/>
-                    <field name="department_short_name"/>
-                    <field name="month_sent"/>
-                    <field name="year_sent"/>
-                    <field name="credit_spent" sum="Total Credit Spent"/>
+                <list string="Department SMS Expenditure" create="false" delete="false">
+                    <field name="display_name"/>
+                    <field name="department_id"/>
+                    <field name="year"/>
+                    <field name="quarter"/>
+                    <field name="total_sms"/>
+                    <field name="total_cost" sum="Total Cost (KES)"/>
+                    <field name="successful_sms"/>
+                    <field name="failed_sms"/>
                     <field name="kfs5_processed"/>
                     <field name="kfs5_processed_date"/>
                     <field name="account_number"/>
@@ -20,36 +23,75 @@
             </field>
         </record>
 
-        <!-- Department Expenditure Search View -->
-        <record id="view_sms_department_expenditure_search" model="ir.ui.view">
-            <field name="name">sms.department.expenditure.search</field>
-            <field name="model">sms.department.expenditure</field>
+        <record id="view_sms_department_expenditure_form" model="ir.ui.view">
+            <field name="name">su.sms.department.expenditure.form</field>
+            <field name="model">su.sms.department.expenditure</field>
             <field name="arch" type="xml">
-                <search string="Search Department Expenditure">
-                    <field name="department_name"/>
-                    <field name="month_sent"/>
-                    <field name="year_sent"/>
-                    <separator/>
-                    <filter string="Not Processed" name="not_processed" domain="[('kfs5_processed', '=', False)]"/>
-                    <filter string="Processed" name="processed" domain="[('kfs5_processed', '=', True)]"/>
-                    <separator/>
-                    <filter string="Current Month" name="current_month" 
-                            domain="[('month_sent', '=', context_today().strftime('%m')), ('year_sent', '=', context_today().strftime('%Y'))]"/>
-                    <group>
-                        <filter string="Department" name="group_department" context="{'group_by': 'department_id'}"/>
-                        <filter string="Month" name="group_month" context="{'group_by': 'month_sent'}"/>
-                        <filter string="Year" name="group_year" context="{'group_by': 'year_sent'}"/>
-                    </group>
-                </search>
+                <form string="Department SMS Expenditure">
+                    <header>
+                        <button name="action_export_to_kfs5" 
+                                string="Export to KFS5" 
+                                type="object" 
+                                class="oe_highlight"
+                                invisible="kfs5_processed == True"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_logs" 
+                                    type="object" 
+                                    class="oe_stat_button" 
+                                    icon="fa-list-alt"
+                                    string="View SMS Logs">
+                            </button>
+                        </div>
+
+                        <widget name="web_ribbon" title="Exported" bg_color="bg-success" invisible="kfs5_processed == False"/>
+                        
+                        <div class="oe_title">
+                            <h1><field name="display_name"/></h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Department Details">
+                                <field name="department_id" readonly="1"/>
+                                <field name="account_number" readonly="1"/>
+                                <field name="object_code" readonly="1"/>
+                            </group>
+                            <group string="Period Info">
+                                <field name="year" readonly="1"/>
+                                <field name="quarter" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="SMS Statistics">
+                            <group>
+                                <field name="total_sms" readonly="1"/>
+                                <field name="successful_sms" readonly="1"/>
+                                <field name="failed_sms" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="total_cost" widget="monetary" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="KFS5 Export Details" invisible="kfs5_processed == False">
+                            <field name="kfs5_processed" readonly="1"/>
+                            <field name="kfs5_batch_id" readonly="1"/>
+                            <field name="kfs5_processed_date" readonly="1"/>
+                            <field name="kfs5_processed_by" readonly="1"/>
+                        </group>
+
+                        </sheet>
+                </form>
             </field>
         </record>
 
-        <!-- Department Expenditure Action -->
         <record id="action_sms_department_expenditure" model="ir.actions.act_window">
             <field name="name">Department Expenditure</field>
-            <field name="res_model">sms.department.expenditure</field>
-            <field name="view_mode">list</field>
-            <field name="context">{'search_default_current_month': 1}</field>
+            <field name="res_model">su.sms.department.expenditure</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_group_year': 1, 'search_default_group_quarter': 1}</field>
         </record>
+
     </data>
 </odoo>

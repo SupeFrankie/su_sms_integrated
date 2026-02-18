@@ -37,6 +37,7 @@ try:
 except ImportError:
     _logger.warning('SMS Module: python-dotenv not installed. Using database configuration only.')
 
-from . import models
-from . import wizard
 from . import controllers
+from . import models
+from . import tools  
+from . import wizard

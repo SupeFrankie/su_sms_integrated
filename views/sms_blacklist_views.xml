@@ -3,7 +3,7 @@
     <data>
         <record id="view_sms_blacklist_list" model="ir.ui.view">
             <field name="name">sms.blacklist.list</field>
-            <field name="model">sms.blacklist</field>
+            <field name="model">su.sms.blacklist</field>
             <field name="arch" type="xml">
                 <list string="SMS Blacklist">
                     <field name="phone_number"/>
@@ -16,7 +16,7 @@
 
         <record id="view_sms_blacklist_form" model="ir.ui.view">
             <field name="name">sms.blacklist.form</field>
-            <field name="model">sms.blacklist</field>
+            <field name="model">su.sms.blacklist</field>
             <field name="arch" type="xml">
                 <form string="SMS Blacklist">
                     <sheet>
@@ -37,7 +37,7 @@
 
         <record id="view_sms_blacklist_search" model="ir.ui.view">
             <field name="name">sms.blacklist.search</field>
-            <field name="model">sms.blacklist</field>
+            <field name="model">su.sms.blacklist</field>
             <field name="arch" type="xml">
                 <search string="Search SMS Blacklist">
                     <field name="phone_number"/>
@@ -54,7 +54,7 @@
 
         <record id="action_sms_blacklist" model="ir.actions.act_window">
             <field name="name">SMS Blacklist</field>
-            <field name="res_model">sms.blacklist</field>
+            <field name="res_model">su.sms.blacklist</field>
             <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
             <field name="help" type="html">

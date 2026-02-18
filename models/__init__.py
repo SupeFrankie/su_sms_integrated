@@ -3,26 +3,29 @@
 REFACTORED: Removed parallel SMS implementations
 """
 
-# Core Odoo Extensions
-from . import odoo_sms_integration
-from . import hr_department
+# Core Odoo extensions
+from . import res_company
+from . import res_config_settings
 from . import res_partner
 from . import res_users
+from . import hr_department
 
-# SU Custom Models
+# Odoo SMS extensions (native models == extended)
+from . import sms_sms
+from . import sms_tracker
+
+# SU custom models
 from . import sms_administrator
 from . import sms_template
 from . import sms_blacklist
 from . import sms_balance
-from . import sms_gateway_config
-from . import sms_gateway_provider  
-from . import su_sms_log  # (replaces sms_detail)
-from . import su_sms_department_expenditure  # REFACTORED
+from . import su_sms_log
+from . import su_sms_department_expenditure
 
-# Webservice Connectors
+# Webservice / integration
 from . import webservice_connector
 
-# Student/Academic Models (if still needed)
+# Academic domain models
 from . import su_academic_year
 from . import su_course
 from . import su_enrolment_period

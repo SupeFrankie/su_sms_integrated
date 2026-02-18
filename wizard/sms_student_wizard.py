@@ -30,7 +30,7 @@ class SmsStudentWizard(models.TransientModel):
     send_to_fathers = fields.Boolean(string='Fathers', default=False)
     send_to_mothers = fields.Boolean(string='Mothers', default=False)
     
-    template_id = fields.Many2one('sms.template', string='Template')
+    template_id = fields.Many2one('su.sms.template', string='Template')
     body = fields.Text(string='Message', required=True)
     recipient_count = fields.Integer(compute='_compute_recipients')
     

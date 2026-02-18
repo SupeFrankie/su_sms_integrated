@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- list View -->
     <record id="view_su_sms_log_list" model="ir.ui.view">
         <field name="name">su.sms.log.list</field>
         <field name="model">su.sms.log</field>
@@ -19,7 +18,6 @@
         </field>
     </record>
     
-    <!-- Form View -->
     <record id="view_su_sms_log_form" model="ir.ui.view">
         <field name="name">su.sms.log.form</field>
         <field name="model">su.sms.log</field>
@@ -43,7 +41,7 @@
                     <group string="Message">
                         <field name="message" nolabel="1"/>
                     </group>
-                    <group string="Failure Details" attrs="{'invisible': [('status', 'not in', ['failed', 'bounced'])]}">
+                    <group string="Failure Details" invisible="status not in ['failed', 'bounced']">
                         <field name="failure_reason" nolabel="1"/>
                     </group>
                 </sheet>
@@ -51,18 +49,11 @@
         </field>
     </record>
     
-    <!-- Action -->
     <record id="action_su_sms_log" model="ir.actions.act_window">
         <field name="name">SMS Logs</field>
         <field name="res_model">su.sms.log</field>
         <field name="view_mode">list,form</field>
         <field name="context">{'search_default_this_month': 1}</field>
     </record>
-    
-    <!-- Menu Item -->
-    <menuitem id="menu_su_sms_log"
-              name="SMS Logs"
-              parent="menu_sms_root"
-              action="action_su_sms_log"
-              sequence="30"/>
+
 </odoo>

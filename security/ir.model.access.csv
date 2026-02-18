@@ -1,39 +1,21 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-# Core SMS Access (everyone can read Odoo's sms.sms)
-access_sms_sms_user,sms.sms.user,sms.model_sms_sms,group_sms_basic_user,1,0,0,0
-access_sms_sms_admin,sms.sms.admin,sms.model_sms_sms,group_sms_administrator,1,1,1,1
-
-# SU SMS Log
-access_su_sms_log_user,su.sms.log.user,model_su_sms_log,group_sms_basic_user,1,0,0,0
-access_su_sms_log_admin,su.sms.log.admin,model_su_sms_log,group_sms_administrator,1,1,0,0
-access_su_sms_log_system,su.sms.log.system,model_su_sms_log,group_sms_system_admin,1,1,1,1
-
-# Department Expenditure
-access_su_sms_expenditure_admin,su.sms.expenditure.admin,model_su_sms_department_expenditure,group_sms_administrator,1,0,0,0
-access_su_sms_expenditure_system,su.sms.expenditure.system,model_su_sms_department_expenditure,group_sms_system_admin,1,1,1,1
-
-# SMS Administrator
-access_sms_administrator_user,sms.administrator.user,model_sms_administrator,group_sms_basic_user,1,0,0,0
-access_sms_administrator_admin,sms.administrator.admin,model_sms_administrator,group_sms_administrator,1,1,0,0
-access_sms_administrator_system,sms.administrator.system,model_sms_administrator,group_sms_system_admin,1,1,1,1
-
-# SMS Template
-access_sms_template_user,sms.template.user,model_sms_template,group_sms_basic_user,1,1,1,0
-access_sms_template_admin,sms.template.admin,model_sms_template,group_sms_administrator,1,1,1,1
-
-# SMS Blacklist
-access_sms_blacklist_user,sms.blacklist.user,model_sms_blacklist,group_sms_basic_user,1,0,0,0
-access_sms_blacklist_admin,sms.blacklist.admin,model_sms_blacklist,group_sms_administrator,1,1,1,0
-access_sms_blacklist_system,sms.blacklist.system,model_sms_blacklist,group_sms_system_admin,1,1,1,1
-
-# Gateway Config (System Admin Only)
-access_sms_gateway_config_system,sms.gateway.config.system,model_sms_gateway_configuration,group_sms_system_admin,1,1,1,1
-
-# Wizards (all authenticated users)
-access_sms_manual_wizard,sms.manual.wizard,model_sms_manual_wizard,group_sms_basic_user,1,1,1,1
-access_sms_import_wizard,sms.import.wizard,model_sms_import_wizard,group_sms_basic_user,1,1,1,1
-access_sms_staff_wizard,sms.staff.wizard,model_sms_staff_wizard,group_sms_department_admin,1,1,1,1
-access_sms_student_wizard,sms.student.wizard,model_sms_student_wizard,group_sms_faculty_admin,1,1,1,1
-
-# HR Department (extend Odoo's hr.department access - don't duplicate)
-access_hr_department_sms_user,hr.department.sms.user,hr.model_hr_department,group_sms_basic_user,1,0,0,0
+access_sms_sms_user,sms.sms.user,sms.model_sms_sms,su_sms_integrated.group_sms_basic_user,1,0,0,0
+access_sms_sms_admin,sms.sms.admin,sms.model_sms_sms,su_sms_integrated.group_sms_administrator,1,1,1,1
+access_su_sms_log_user,su.sms.log.user,model_su_sms_log,su_sms_integrated.group_sms_basic_user,1,0,0,0
+access_su_sms_log_admin,su.sms.log.admin,model_su_sms_log,su_sms_integrated.group_sms_administrator,1,1,0,0
+access_su_sms_log_system,su.sms.log.system,model_su_sms_log,su_sms_integrated.group_sms_system_admin,1,1,1,1
+access_su_sms_expenditure_admin,su.sms.expenditure.admin,model_su_sms_department_expenditure,su_sms_integrated.group_sms_administrator,1,0,0,0
+access_su_sms_expenditure_system,su.sms.expenditure.system,model_su_sms_department_expenditure,su_sms_integrated.group_sms_system_admin,1,1,1,1
+access_sms_administrator_user,sms.administrator.user,model_sms_administrator,su_sms_integrated.group_sms_basic_user,1,0,0,0
+access_sms_administrator_admin,sms.administrator.admin,model_sms_administrator,su_sms_integrated.group_sms_administrator,1,1,0,0
+access_sms_administrator_system,sms.administrator.system,model_sms_administrator,su_sms_integrated.group_sms_system_admin,1,1,1,1
+access_su_sms_template_user,su.sms.template.user,model_su_sms_template,su_sms_integrated.group_sms_basic_user,1,1,1,0
+access_su_sms_template_admin,su.sms.template.admin,model_su_sms_template,su_sms_integrated.group_sms_administrator,1,1,1,1
+access_su_sms_blacklist_user,su.sms.blacklist.user,model_su_sms_blacklist,su_sms_integrated.group_sms_basic_user,1,0,0,0
+access_su_sms_blacklist_admin,su.sms.blacklist.admin,model_su_sms_blacklist,su_sms_integrated.group_sms_administrator,1,1,1,0
+access_su_sms_blacklist_system,su.sms.blacklist.system,model_su_sms_blacklist,su_sms_integrated.group_sms_system_admin,1,1,1,1
+access_sms_manual_wizard,sms.manual.wizard,model_sms_manual_wizard,su_sms_integrated.group_sms_basic_user,1,1,1,1
+access_sms_staff_wizard,sms.staff.wizard,model_sms_staff_wizard,su_sms_integrated.group_sms_department_admin,1,1,1,1
+access_sms_student_wizard,sms.student.wizard,model_sms_student_wizard,su_sms_integrated.group_sms_faculty_admin,1,1,1,1
+access_hr_department_sms_user,hr.department.sms.user,hr.model_hr_department,su_sms_integrated.group_sms_basic_user,1,0,0,0
+access_su_academic_year,access_su_academic_year,su_sms_integrated.model_su_academic_year,base.group_user,1,0,0,0

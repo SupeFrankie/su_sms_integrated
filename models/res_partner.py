@@ -58,7 +58,7 @@ class ResPartner(models.Model):
     # ---------------------------------------------------------
 
     def _compute_sms_blacklisted(self):
-        Blacklist = self.env['sms.blacklist']
+        Blacklist = self.env['su.sms.blacklist']
         for partner in self:
             mobile = partner._get_mobile_number()
             partner.sms_blacklisted = bool(
@@ -142,7 +142,7 @@ class ResPartner(models.Model):
         if self.sms_blacklisted:
             raise UserError(_('Already blacklisted.'))
 
-        self.env['sms.blacklist'].create({
+        self.env['su.sms.blacklist'].create({
             'phone_number': mobile,
             'reason': 'admin',
             'notes': _('Added from partner: %s') % self.name,
