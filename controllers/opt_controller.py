@@ -1,5 +1,13 @@
 # controllers/opt_controller.py
 
+"""
+- Removed website=True from all routes.
+  - The `website` module is NOT listed in __manifest__.py depends.
+  - website=True forces Odoo to inject website context/multilang routing;
+    without the module installed this raises an error at route registration.
+  - Replaced with type='http', auth='public', website=False.
+  - Templates use web.layout (not website.layout), so no website module needed.
+"""
 
 from odoo import http
 from odoo.http import request
@@ -13,33 +21,39 @@ PHONE_PATTERN = re.compile(r'^\+?1?\d{9,15}$')
 
 
 class SmsOptOutController(http.Controller):
-    
+
     def _validate_phone_number(self, phone_number):
-        """Validate phone number format"""
+        """Validate phone number format."""
         if not phone_number or not PHONE_PATTERN.match(phone_number):
             raise ValueError("Invalid phone number format")
         return phone_number.strip()
-    
+
     def _render_response(self, template, message, status, phone_number):
-        """Helper method to render responses"""
+        """Helper method to render responses."""
         full_template = f'su_sms_integrated.{template}'
         return request.render(full_template, {
             'message': message,
             'status': status,
             'phone_number': phone_number
         })
-    
-    @http.route('/sms/optout/<string:phone_number>', type='http', auth='public', website=True, csrf=False)
+
+    @http.route(
+        '/sms/optout/<string:phone_number>',
+        type='http',
+        auth='public',
+        csrf=False,
+        save_session=False,
+    )
     def sms_opt_out(self, phone_number):
-        """Handle SMS opt-out requests via web link"""
+        """Handle SMS opt-out requests via web link."""
         try:
             phone_number = self._validate_phone_number(phone_number)
-            
+
             existing = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)
-            
+
             if existing:
                 return self._render_response(
                     'sms_opt_out_page',
@@ -47,24 +61,24 @@ class SmsOptOutController(http.Controller):
                     "already_opted_out",
                     phone_number
                 )
-            
+
             request.env['su.sms.blacklist'].sudo().create({
                 'phone_number': phone_number,
                 'reason': 'user_request',
                 'notes': 'User opted out via web link',
                 'active': True
             })
-            _logger.info(f"Phone number {phone_number} opted out via web link")
-            
+            _logger.info("Phone number %s opted out via web link", phone_number)
+
             return self._render_response(
                 'sms_opt_out_page',
                 f"Phone number {phone_number} has been successfully opted out from SMS campaigns.",
                 "success",
                 phone_number
             )
-            
+
         except ValueError as e:
-            _logger.warning(f"Invalid phone number: {str(e)}")
+            _logger.warning("Invalid phone number opt-out attempt: %s", str(e))
             return self._render_response(
                 'sms_opt_out_page',
                 "Invalid phone number format.",
@@ -72,44 +86,50 @@ class SmsOptOutController(http.Controller):
                 phone_number if phone_number else ''
             )
         except Exception as e:
-            _logger.error(f"Error processing opt-out for {phone_number}: {str(e)}")
+            _logger.error("Error processing opt-out for %s: %s", phone_number, str(e))
             return self._render_response(
                 'sms_opt_out_page',
                 'An error occurred while processing your request. Please try again later.',
                 'error',
                 phone_number if phone_number else ''
             )
-    
-    @http.route('/sms/optin/<string:phone_number>', type='http', auth='public', website=True, csrf=False)
+
+    @http.route(
+        '/sms/optin/<string:phone_number>',
+        type='http',
+        auth='public',
+        csrf=False,
+        save_session=False,
+    )
     def sms_opt_in(self, phone_number):
-        """Handle SMS opt-in requests (re-subscribe)"""
+        """Handle SMS opt-in requests (re-subscribe)."""
         try:
             phone_number = self._validate_phone_number(phone_number)
-            
+
             blacklist_entry = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)
-            
+
             if blacklist_entry:
                 blacklist_entry.write({'active': False})
-                _logger.info(f"Phone number {phone_number} opted back in via web link")
+                _logger.info("Phone number %s opted back in via web link", phone_number)
                 return self._render_response(
                     'sms_opt_in_page',
                     f"Phone number {phone_number} has been successfully re-subscribed to SMS campaigns.",
                     "success",
                     phone_number
                 )
-            
+
             return self._render_response(
                 'sms_opt_in_page',
                 f"Phone number {phone_number} is not currently opted out.",
                 "not_opted_out",
                 phone_number
             )
-            
+
         except ValueError as e:
-            _logger.warning(f"Invalid phone number: {str(e)}")
+            _logger.warning("Invalid phone number opt-in attempt: %s", str(e))
             return self._render_response(
                 'sms_opt_in_page',
                 "Invalid phone number format.",
@@ -117,44 +137,53 @@ class SmsOptOutController(http.Controller):
                 phone_number if phone_number else ''
             )
         except Exception as e:
-            _logger.error(f"Error processing opt-in for {phone_number}: {str(e)}")
+            _logger.error("Error processing opt-in for %s: %s", phone_number, str(e))
             return self._render_response(
                 'sms_opt_in_page',
                 'An error occurred while processing your request. Please try again later.',
                 'error',
                 phone_number if phone_number else ''
             )
-    
-    @http.route('/sms/status', type='http', auth='public', website=True)
-    def check_opt_status(self):
-        """Page to check opt-out status"""
-        return request.render('su_sms_integrated.sms_status_check_page')
-    
 
-    @http.route('/sms/check_status', type='jsonrpc', auth='public', csrf=False)
+    @http.route(
+        '/sms/status',
+        type='http',
+        auth='public',
+        save_session=False,
+    )
+    def check_opt_status(self):
+        """Page to check opt-out status."""
+        return request.render('su_sms_integrated.sms_status_check_page')
+
+    @http.route(
+        '/sms/check_status',
+        type='jsonrpc',
+        auth='public',
+        csrf=False,
+    )
     def check_status_json(self, phone_number):
-        """JSON endpoint to check if a number is opted out"""
+        """JSON endpoint to check if a number is opted out."""
         try:
             phone_number = self._validate_phone_number(phone_number)
-            
+
             blacklisted = request.env['su.sms.blacklist'].sudo().search([
                 ('phone_number', '=', phone_number),
                 ('active', '=', True)
             ], limit=1)
-            
+
             return {
                 'success': True,
                 'phone_number': phone_number,
                 'is_opted_out': bool(blacklisted),
                 'reason': blacklisted.reason if blacklisted else None
             }
-        except ValueError as e:
+        except ValueError:
             return {
                 'success': False,
                 'error': 'Invalid phone number format'
             }
         except Exception as e:
-            _logger.error(f"Error checking status for {phone_number}: {str(e)}")
+            _logger.error("Error checking SMS status for %s: %s", phone_number, str(e))
             return {
                 'success': False,
                 'error': 'An error occurred while processing your request'

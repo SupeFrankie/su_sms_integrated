@@ -3,41 +3,42 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
+
 class SMSAdministrator(models.Model):
     _name = 'sms.administrator'
     _description = 'SMS Administrator'
-    
-    user_id = fields.Many2one('res.users', string='User', required=True, 
+
+    user_id = fields.Many2one('res.users', string='User', required=True,
                               ondelete='cascade', index=True)
-    department_id = fields.Many2one('hr.department', string='Finance Department', 
+    department_id = fields.Many2one('hr.department', string='Finance Department',
                                     required=True, ondelete='restrict')
-    phone = fields.Char(string='Admin Phone', 
+    phone = fields.Char(string='Admin Phone',
                         help='Administrator phone (receives copy of sent SMS)')
     active = fields.Boolean(default=True)
-    
+
     log_ids = fields.One2many('su.sms.log', 'sender_id', string='Sent Messages')
     total_messages = fields.Integer(string='Total Messages', compute='_compute_totals')
     total_spent = fields.Float(string='Total Spent', compute='_compute_totals')
-    
+
     name = fields.Char(related='user_id.name', string='Name', store=True, readonly=True)
     email = fields.Char(related='user_id.email', string='Email', readonly=True)
-        
+
     @api.constrains('user_id')
     def _check_unique_user(self):
         for record in self:
             existing = self.search([
                 ('user_id', '=', record.user_id.id),
-                ('id', '!=', record.id)
+                ('id', '!=', record.id),
             ], limit=1)
             if existing:
                 raise ValidationError('A user can only have one SMS administrator record!')
-    
+
     @api.depends('log_ids')
     def _compute_totals(self):
         for admin in self:
             admin.total_messages = len(admin.log_ids)
             admin.total_spent = sum(admin.log_ids.mapped('cost'))
-    
+
     def action_view_messages(self):
         return {
             'type': 'ir.actions.act_window',
@@ -45,5 +46,4 @@ class SMSAdministrator(models.Model):
             'res_model': 'su.sms.log',
             'view_mode': 'list,form',
             'domain': [('sender_id', '=', self.id)],
-            'view_mode': 'list,form',
         }

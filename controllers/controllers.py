@@ -1,10 +1,7 @@
 # controllers/controllers.py
 
-
 """
 Africa's Talking delivery-status webhook controller.
-
-Pattern: mirrors sms_twilio/controllers/controllers.py exactly.
 
 Endpoint:  POST /sms_africastalking/status/<uuid>
 Security:  HMAC-SHA256 signature validation via X-AT-Signature header.
@@ -16,14 +13,11 @@ import re
 
 from odoo.addons.su_sms_integrated.tools.sms_africastalking import (
     generate_at_callback_signature,
-    get_at_error_code_mapping,
 )
 from odoo.http import Controller, request, route
 
 _logger = logging.getLogger(__name__)
 
-# AT delivery status -> Odoo sms.tracker state
-# Only error states are listed separately so the controller can branch.
 _AT_ERROR_STATES = {'Rejected', 'Failed'}
 
 _AT_TO_SMS_STATE = {
@@ -69,26 +63,26 @@ class SmsAfricasTalkingController(Controller):
           errorCode     AT error code if failed
           errorMessage  Human-readable error
         """
-        # Validate UUID 
+        # Validate UUID
         if not _UUID_RE.match(uuid or ''):
             _logger.warning("AT webhook: invalid uuid=%r", uuid)
-            raise request.not_found()
+            return request.not_found()
 
-        # Validate status 
+        # Validate status
         if status not in _AT_TO_SMS_STATE:
             _logger.warning(
                 "AT webhook: unknown status=%r for uuid=%s", status, uuid
             )
-            raise request.not_found()
+            return request.not_found()
 
-        # Validate signature 
+        # Validate signature
         if not self._validate_at_signature(uuid):
             _logger.warning(
                 "AT webhook: signature mismatch for uuid=%s", uuid
             )
-            raise request.not_found()
+            return request.not_found()
 
-        # Find tracker 
+        # Find tracker
         tracker_sudo = request.env['sms.tracker'].sudo().search(
             [('sms_uuid', '=', uuid)]
         )
@@ -96,9 +90,9 @@ class SmsAfricasTalkingController(Controller):
             _logger.warning(
                 "AT webhook: no sms.tracker for uuid=%s", uuid
             )
-            return 'OK'  # Return OK so AT does not retry indefinitely.
+            return request.make_response('OK')
 
-        # Update tracker state 
+        # Update tracker state
         if status in _AT_ERROR_STATES:
             tracker_sudo._action_update_from_at_error(
                 status, errorCode, errorMessage
@@ -108,13 +102,13 @@ class SmsAfricasTalkingController(Controller):
                 _AT_TO_SMS_STATE[status]
             )
 
-        # Mark SMS for deletion (exact twilio pattern) 
+        # Mark SMS for deletion
         request.env['sms.sms'].sudo().search([
             ('uuid', '=', uuid),
             ('to_delete', '=', False),
         ]).write({'to_delete': True})
 
-        return 'OK'
+        return request.make_response('OK')
 
     # ------------------------------------------------------------------
 
@@ -123,8 +117,7 @@ class SmsAfricasTalkingController(Controller):
         Compare the X-AT-Signature header against our computed HMAC.
 
         Returns True if signatures match, False otherwise.
-        If the company has no api_key configured, validation is skipped
-        (returns True) so the webhook is still functional during initial setup.
+        Skips validation (returns True) when company has no api_key configured.
         """
         sms = request.env['sms.sms'].sudo().search(
             [('uuid', '=', uuid)], limit=1

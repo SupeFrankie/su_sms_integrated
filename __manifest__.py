@@ -12,7 +12,6 @@
         'web',
         'hr',
         'sms',
-        'iap',
     ],
 
     'data': [
@@ -37,7 +36,7 @@
         'views/su_sms_log_views.xml',
         'views/sms_blacklist_views.xml',
         'views/sms_template_views.xml',
-        'views/opt_out_templates.xml',
+        # 'views/opt_out_templates.xml', (commented out for now like it's controller)
         'views/menu_views.xml',
     ],
 
