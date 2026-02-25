@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_su_sms" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.su.sms</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="5"/>
+        <field name="inherit_id" ref="sms.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert our provider selector before the IAP widget -->
+            <xpath expr="//widget[@service_name='sms']" position="before">
+                <div class="col-12 col-lg-6">
+                    <div class="o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <label for="sms_provider"/>
+                            <div class="text-muted">
+                                Choose your SMS delivery provider
+                            </div>
+                            <div class="mt8">
+                                <field name="sms_provider" widget="radio"
+                                       options="{'horizontal': true}" required="1"/>
+                            </div>
+                            <div class="mt8" invisible="sms_provider != 'africas_talking'">
+                                <field name="at_environment" widget="radio"
+                                       options="{'horizontal': true}"/>
+                                <button name="action_open_su_sms_account_manage"
+                                        type="object"
+                                        string="Configure Africa's Talking Account"
+                                        icon="oi-arrow-right"
+                                        class="btn-link"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+            <!-- Hide the IAP widget when using AT -->
+            <xpath expr="//widget[@service_name='sms']" position="attributes">
+                <attribute name="invisible">sms_provider == 'africas_talking'</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

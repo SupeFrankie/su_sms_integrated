@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Top-level SU SMS Menu
+    ============================================================ -->
+    <menuitem id="menu_su_sms_root"
+              name="SU SMS"
+              sequence="50"
+              web_icon="su_sms_integrated,static/description/icon.png"
+              groups="su_sms_integrated.group_su_sms_user"/>
+
+    <!-- Dashboard -->
+    <menuitem id="menu_su_sms_dashboard"
+              name="Dashboard"
+              parent="menu_su_sms_root"
+              action="action_su_sms_dashboard"
+              sequence="1"
+              groups="su_sms_integrated.group_su_sms_user"/>
+
+    <!-- Send SMS (compose wizard) -->
+    <menuitem id="menu_su_sms_compose"
+              name="Send SMS"
+              parent="menu_su_sms_root"
+              action="action_su_sms_compose_quick"
+              sequence="5"
+              groups="su_sms_integrated.group_su_sms_user"/>
+
+    <!-- SMS History -->
+    <menuitem id="menu_su_sms_history"
+              name="SMS History"
+              parent="menu_su_sms_root"
+              action="action_su_sms_message"
+              sequence="10"
+              groups="su_sms_integrated.group_su_sms_user"/>
+
+    <!-- ============================================================
+         Admin-only section
+    ============================================================ -->
+    <menuitem id="menu_su_sms_admin_root"
+              name="Administration"
+              parent="menu_su_sms_root"
+              sequence="90"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+
+    <menuitem id="menu_su_sms_departments"
+              name="Departments"
+              parent="menu_su_sms_admin_root"
+              action="action_su_sms_department"
+              sequence="1"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+
+    <menuitem id="menu_su_sms_administrators"
+              name="Administrators"
+              parent="menu_su_sms_admin_root"
+              action="action_su_sms_administrator"
+              sequence="2"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+</odoo>

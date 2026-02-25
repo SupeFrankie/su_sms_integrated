@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Module Category
+    ============================================================ -->
+    <record id="module_category_su_sms" model="ir.module.category">
+        <field name="name">SU SMS Management</field>
+        <field name="description">Strathmore University SMS sending system</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <!-- ============================================================
+         Security Groups (mirrors original role structure)
+         Role 3 - Basic User      : Ad Hoc + Manual only
+         Role 2 - Faculty Admin   : + Students SMS
+         Role 4 - Staff Admin     : + Staff SMS
+         Role 5 - Admin           : Staff + Students
+         Role 1 - System Manager  : Full access
+    ============================================================ -->
+    <record id="group_su_sms_user" model="res.groups">
+        <field name="name">SMS User (Basic)</field>
+        <field name="comment">Can send Ad Hoc and Manual SMS</field>
+    </record>
+
+    <record id="group_su_sms_faculty_admin" model="res.groups">
+        <field name="name">SMS Faculty Administrator</field>
+        <field name="implied_ids" eval="[(4, ref('group_su_sms_user'))]"/>
+        <field name="comment">Can send Ad Hoc, Manual, and Student SMS</field>
+    </record>
+
+    <record id="group_su_sms_staff_admin" model="res.groups">
+        <field name="name">SMS Staff Administrator</field>
+        <field name="implied_ids" eval="[(4, ref('group_su_sms_user'))]"/>
+        <field name="comment">Can send Ad Hoc, Manual, and Staff SMS</field>
+    </record>
+
+    <record id="group_su_sms_admin" model="res.groups">
+        <field name="name">SMS Administrator</field>
+        <field name="implied_ids" eval="[(4, ref('group_su_sms_faculty_admin')), (4, ref('group_su_sms_staff_admin'))]"/>
+        <field name="comment">Can send all SMS types</field>
+    </record>
+
+    <record id="group_su_sms_manager" model="res.groups">
+        <field name="name">SMS System Manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_su_sms_admin'))]"/>
+        <field name="comment">Full access: departments, administrators, all SMS, expenditure dashboard</field>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- ============================================================
+         Record Rules - Department Isolation
+    ============================================================ -->
+
+    <!-- SMS Messages: users see only their department's messages -->
+    <record id="rule_su_sms_message_own_dept" model="ir.rule">
+        <field name="name">SU SMS: Messages - Own Department Only</field>
+        <field name="model_id" ref="model_su_sms_message"/>
+        <field name="groups" eval="[(4, ref('group_su_sms_user'))]"/>
+        <field name="domain_force">
+            [('administrator_id.user_id', '=', user.id)]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Managers see all messages -->
+    <record id="rule_su_sms_message_manager_all" model="ir.rule">
+        <field name="name">SU SMS: Messages - Manager Full Access</field>
+        <field name="model_id" ref="model_su_sms_message"/>
+        <field name="groups" eval="[(4, ref('group_su_sms_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- SMS Details: follow message visibility -->
+    <record id="rule_su_sms_detail_own_dept" model="ir.rule">
+        <field name="name">SU SMS: Details - Own Department Only</field>
+        <field name="model_id" ref="model_su_sms_detail"/>
+        <field name="groups" eval="[(4, ref('group_su_sms_user'))]"/>
+        <field name="domain_force">
+            [('message_id.administrator_id.user_id', '=', user.id)]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_su_sms_detail_manager_all" model="ir.rule">
+        <field name="name">SU SMS: Details - Manager Full Access</field>
+        <field name="model_id" ref="model_su_sms_detail"/>
+        <field name="groups" eval="[(4, ref('group_su_sms_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Departments: manager-only write, all users can read -->
+    <record id="rule_su_sms_department_manager_write" model="ir.rule">
+        <field name="name">SU SMS: Department - Manager Only Write</field>
+        <field name="model_id" ref="model_su_sms_department"/>
+        <field name="groups" eval="[(4, ref('group_su_sms_user'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

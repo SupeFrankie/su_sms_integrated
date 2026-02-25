@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Message Form -->
+    <record id="su_sms_message_view_form" model="ir.ui.view">
+        <field name="name">su.sms.message.form</field>
+        <field name="model">su.sms.message</field>
+        <field name="arch" type="xml">
+            <form string="SMS Campaign">
+                <header>
+                    <button name="action_send" string="Send Now"
+                            type="object" class="btn-primary"
+                            invisible="state not in ['draft', 'failed']"/>
+                    <button name="action_mark_kfs5" string="Mark KFS5 Processed"
+                            type="object" class="btn-secondary"
+                            invisible="kfs5_processed or state != 'done'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,sending,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_recipients" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="recipient_count" widget="statinfo" string="Recipients"/>
+                        </button>
+                        <button name="action_view_recipients" type="object"
+                                class="oe_stat_button" icon="fa-check-circle">
+                            <field name="success_count" widget="statinfo" string="Sent"/>
+                        </button>
+                        <button name="action_view_recipients" type="object"
+                                class="oe_stat_button" icon="fa-times-circle">
+                            <field name="failed_count" widget="statinfo" string="Failed"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group string="Campaign Info">
+                            <field name="sms_type" readonly="state != 'draft'"/>
+                            <field name="administrator_id" readonly="state != 'draft'"/>
+                            <field name="department_id" readonly="1"/>
+                        </group>
+                        <group string="Cost Tracking">
+                            <field name="total_cost" readonly="1" digits="[10,4]"/>
+                            <field name="kfs5_processed" readonly="1"/>
+                            <field name="kfs5_processed_date" readonly="1"
+                                   invisible="not kfs5_processed_date"/>
+                        </group>
+                    </group>
+                    <group string="Message">
+                        <field name="body" nolabel="1" widget="text"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <notebook>
+                        <page string="Recipients" name="recipients">
+                            <field name="detail_ids" readonly="1">
+                                <list decoration-success="status == 'sent'"
+                                      decoration-danger="status == 'failed'"
+                                      decoration-warning="status == 'rejected'">
+                                    <field name="recipient_name"/>
+                                    <field name="phone_number"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'sent'"
+                                           decoration-danger="status == 'failed'"
+                                           decoration-warning="status == 'rejected'"
+                                           decoration-muted="status == 'pending'"/>
+                                    <field name="cost" string="Cost (KES)"/>
+                                    <field name="at_message_id" optional="hide"/>
+                                    <field name="failure_reason" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Manual / CSV" invisible="sms_type not in ['manual', 'adhoc']">
+                            <field name="manual_numbers" readonly="1"
+                                   invisible="sms_type != 'manual'" widget="text"/>
+                            <field name="csv_filename" readonly="1"
+                                   invisible="sms_type != 'adhoc'"/>
+                        </page>
+                        <page string="Filters" invisible="sms_type not in ['staff', 'student']">
+                            <!-- Staff -->
+                            <group invisible="sms_type != 'staff'">
+                                <field name="staff_department" readonly="1"/>
+                                <field name="staff_gender" readonly="1"/>
+                                <field name="staff_category" readonly="1"/>
+                                <field name="staff_job_status" readonly="1"/>
+                            </group>
+                            <!-- Student -->
+                            <group invisible="sms_type != 'student'">
+                                <field name="student_school" readonly="1"/>
+                                <field name="student_program" readonly="1"/>
+                                <field name="student_course" readonly="1"/>
+                                <field name="student_year" readonly="1"/>
+                                <field name="student_intake" readonly="1"/>
+                                <field name="include_students" readonly="1"/>
+                                <field name="include_fathers" readonly="1"/>
+                                <field name="include_mothers" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Message List -->
+    <record id="su_sms_message_view_list" model="ir.ui.view">
+        <field name="name">su.sms.message.list</field>
+        <field name="model">su.sms.message</field>
+        <field name="arch" type="xml">
+            <list string="SMS Messages" decoration-muted="state == 'failed'"
+                  decoration-success="state == 'done'">
+                <field name="create_date" string="Date"/>
+                <field name="sms_type" widget="badge"/>
+                <field name="administrator_id" string="Sent By"/>
+                <field name="department_id"/>
+                <field name="body" string="Message" optional="show"/>
+                <field name="recipient_count" string="Recipients"/>
+                <field name="success_count" string="Sent"/>
+                <field name="failed_count" string="Failed" optional="show"/>
+                <field name="total_cost" string="Cost (KES)" digits="[10,4]" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'"
+                       decoration-warning="state == 'partial'"
+                       decoration-info="state in ['draft', 'sending']"/>
+                <field name="kfs5_processed" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Message Search -->
+    <record id="su_sms_message_view_search" model="ir.ui.view">
+        <field name="name">su.sms.message.search</field>
+        <field name="model">su.sms.message</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="administrator_id" string="Sent By"/>
+                <field name="department_id"/>
+                <field name="body" string="Message"/>
+                <filter name="type_manual" string="Manual" domain="[('sms_type','=','manual')]"/>
+                <filter name="type_adhoc" string="Ad Hoc" domain="[('sms_type','=','adhoc')]"/>
+                <filter name="type_staff" string="Staff SMS" domain="[('sms_type','=','staff')]"/>
+                <filter name="type_student" string="Student SMS" domain="[('sms_type','=','student')]"/>
+                <separator/>
+                <filter name="state_done" string="Done" domain="[('state','=','done')]"/>
+                <filter name="state_failed" string="Failed" domain="[('state','=','failed')]"/>
+                <filter name="kfs5_pending" string="KFS5 Pending"
+                        domain="[('kfs5_processed','=',False),('state','=','done')]"/>
+                <separator/>
+                <filter name="this_month" string="This Month"
+                        domain="[('create_date','&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Group By">
+                    <filter name="by_dept" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="by_type" string="SMS Type" context="{'group_by': 'sms_type'}"/>
+                    <filter name="by_admin" string="Administrator" context="{'group_by': 'administrator_id'}"/>
+                    <filter name="by_month" string="Month" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Pivot view for expenditure reports -->
+    <record id="su_sms_message_view_pivot" model="ir.ui.view">
+        <field name="name">su.sms.message.pivot</field>
+        <field name="model">su.sms.message</field>
+        <field name="arch" type="xml">
+            <pivot string="SMS Expenditure" sample="1">
+                <field name="department_id" type="row"/>
+                <field name="create_date" type="col" interval="month"/>
+                <field name="total_cost" type="measure"/>
+                <field name="success_count" type="measure"/>
+                <field name="recipient_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph view -->
+    <record id="su_sms_message_view_graph" model="ir.ui.view">
+        <field name="name">su.sms.message.graph</field>
+        <field name="model">su.sms.message</field>
+        <field name="arch" type="xml">
+            <graph string="SMS by Department" type="bar" sample="1">
+                <field name="department_id" type="row"/>
+                <field name="total_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Action: Send SMS (compose wizard) -->
+    <record id="action_su_sms_compose_quick" model="ir.actions.act_window">
+        <field name="name">Send SMS</field>
+        <field name="res_model">su.sms.compose</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_user'))]"/>
+    </record>
+
+    <!-- Action: SMS History -->
+    <record id="action_su_sms_message" model="ir.actions.act_window">
+        <field name="name">SMS History</field>
+        <field name="res_model">su.sms.message</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_user'))]"/>
+    </record>
+</odoo>

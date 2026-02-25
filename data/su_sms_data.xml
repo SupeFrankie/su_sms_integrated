@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ir.config_parameter for web service base URL (set by admin) -->
+    <record id="param_webservice_base_url" model="ir.config_parameter">
+        <field name="key">su_sms.webservice_base_url</field>
+        <field name="value">https://dataservice.strathmore.edu</field>
+    </record>
+    <record id="param_min_credit" model="ir.config_parameter">
+        <field name="key">su_sms.minimum_credit</field>
+        <field name="value">80</field>
+    </record>
+    <record id="param_icts_threshold" model="ir.config_parameter">
+        <field name="key">su_sms.icts_threshold</field>
+        <field name="value">15000</field>
+    </record>
+</odoo>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Department Form -->
+    <record id="su_sms_department_view_form" model="ir.ui.view">
+        <field name="name">su.sms.department.form</field>
+        <field name="model">su.sms.department</field>
+        <field name="arch" type="xml">
+            <form string="SMS Billing Department">
+                <header>
+                    <button name="action_mark_kfs5_processed" string="Mark KFS5 Processed"
+                            type="object" class="btn-primary"
+                            invisible="kfs5_processed"/>
+                    <field name="kfs5_processed" invisible="1"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_messages" type="object"
+                                class="oe_stat_button" icon="fa-envelope">
+                            <field name="message_count" widget="statinfo" string="SMS Sent"/>
+                        </button>
+                        <button name="%(su_sms_integrated.action_su_sms_administrator)d"
+                                type="action" class="oe_stat_button" icon="fa-users"
+                                context="{'default_department_id': active_id}">
+                            <field name="administrator_count" widget="statinfo" string="Administrators"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group string="Department Info">
+                            <field name="name"/>
+                            <field name="short_name"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="hr_department_id" optional="1"/>
+                        </group>
+                        <group string="KFS5 Billing Codes">
+                            <field name="chart_code"/>
+                            <field name="account_number"/>
+                            <field name="object_code"/>
+                        </group>
+                    </group>
+                    <group string="Expenditure">
+                        <field name="total_cost" widget="monetary"
+                               options="{'currency_field': False}" readonly="1"/>
+                        <field name="kfs5_processed_date" readonly="1"
+                               invisible="not kfs5_processed_date"/>
+                    </group>
+                    <notebook>
+                        <page string="Administrators">
+                            <field name="administrator_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="login"/>
+                                    <field name="role"/>
+                                    <field name="phone"/>
+                                    <field name="active" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Department List -->
+    <record id="su_sms_department_view_list" model="ir.ui.view">
+        <field name="name">su.sms.department.list</field>
+        <field name="model">su.sms.department</field>
+        <field name="arch" type="xml">
+            <list string="SMS Departments">
+                <field name="name"/>
+                <field name="short_name"/>
+                <field name="chart_code"/>
+                <field name="account_number"/>
+                <field name="object_code"/>
+                <field name="administrator_count" string="Admins"/>
+                <field name="message_count" string="SMS Sent"/>
+                <field name="total_cost" string="Cost (KES)" digits="[10,2]"/>
+                <field name="kfs5_processed" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Department Search -->
+    <record id="su_sms_department_view_search" model="ir.ui.view">
+        <field name="name">su.sms.department.search</field>
+        <field name="model">su.sms.department</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="short_name"/>
+                <field name="account_number"/>
+                <filter name="kfs5_not_processed" string="KFS5 Pending"
+                        domain="[('kfs5_processed', '=', False)]"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_su_sms_department" model="ir.actions.act_window">
+        <field name="name">SMS Departments</field>
+        <field name="res_model">su.sms.department</field>
+        <field name="view_mode">list,form</field>
+        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_manager'))]"/>
+    </record>
+</odoo>

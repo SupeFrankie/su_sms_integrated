@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Dashboard client action for the main app screen -->
+    <record id="action_su_sms_dashboard" model="ir.actions.client">
+        <field name="name">SMS Dashboard</field>
+        <field name="tag">su_sms_dashboard</field>
+        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_user'))]"/>
+    </record>
+</odoo>

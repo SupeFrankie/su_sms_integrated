@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="su_sms_integrated.Dashboard">
+        <div class="su-sms-dashboard o_action">
+            <!-- Header Bar -->
+            <div class="su-sms-header d-flex align-items-center justify-content-between p-3 mb-3">
+                <h3 class="mb-0">
+                    <i class="fa fa-comments me-2 text-primary"/>
+                    SU SMS Dashboard
+                </h3>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="su-sms-balance-badge">
+                        <i class="fa fa-credit-card me-1"/>
+                        <t t-if="state.loadingBalance">
+                            <span class="text-muted">Loading balance...</span>
+                        </t>
+                        <t t-elif="state.balanceError">
+                            <span class="text-danger" t-att-title="state.balanceError">
+                                Balance unavailable
+                            </span>
+                        </t>
+                        <t t-else="">
+                            <strong>AT Credit: <t t-esc="state.balance"/></strong>
+                        </t>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="refreshBalance">
+                        <i class="fa fa-refresh"/> Refresh
+                    </button>
+                    <button class="btn btn-sm btn-primary" t-on-click="openCompose">
+                        <i class="fa fa-paper-plane me-1"/> Send SMS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row g-3 px-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-stat-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="fa fa-check-circle fa-2x text-success mb-2"/>
+                            <h4 class="mb-0" t-esc="state.totalSent"/>
+                            <small class="text-muted">Total Sent</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-stat-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="fa fa-money fa-2x text-warning mb-2"/>
+                            <h4 class="mb-0">KES <t t-esc="formatCost(state.totalCost)"/></h4>
+                            <small class="text-muted">Total Cost</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-stat-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="fa fa-envelope fa-2x text-info mb-2"/>
+                            <h4 class="mb-0" t-esc="state.campaignCount"/>
+                            <small class="text-muted">Campaigns</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-stat-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="fa fa-building fa-2x text-primary mb-2"/>
+                            <h4 class="mb-0" t-esc="state.deptCount"/>
+                            <small class="text-muted">Departments</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row g-3 px-3 mb-4">
+                <div class="col-12">
+                    <h5>Quick Send</h5>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-action-card card h-100 border-primary border-opacity-25 cursor-pointer"
+                         t-on-click="() => this.openCompose('manual')">
+                        <div class="card-body text-center py-4">
+                            <i class="fa fa-keyboard-o fa-2x text-primary mb-2"/>
+                            <div class="fw-bold">Manual SMS</div>
+                            <small class="text-muted">Direct number entry</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-action-card card h-100 border-success border-opacity-25 cursor-pointer"
+                         t-on-click="() => this.openCompose('adhoc')">
+                        <div class="card-body text-center py-4">
+                            <i class="fa fa-upload fa-2x text-success mb-2"/>
+                            <div class="fw-bold">Ad Hoc SMS</div>
+                            <small class="text-muted">CSV upload</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-action-card card h-100 border-warning border-opacity-25 cursor-pointer"
+                         t-on-click="() => this.openCompose('staff')">
+                        <div class="card-body text-center py-4">
+                            <i class="fa fa-briefcase fa-2x text-warning mb-2"/>
+                            <div class="fw-bold">Staff SMS</div>
+                            <small class="text-muted">Filter by department</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="su-sms-action-card card h-100 border-info border-opacity-25 cursor-pointer"
+                         t-on-click="() => this.openCompose('student')">
+                        <div class="card-body text-center py-4">
+                            <i class="fa fa-graduation-cap fa-2x text-info mb-2"/>
+                            <div class="fw-bold">Student SMS</div>
+                            <small class="text-muted">Filter by school/course</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Campaigns -->
+            <div class="row px-3 mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fa fa-history me-2"/>Recent SMS Campaigns</h6>
+                            <button class="btn btn-sm btn-link" t-on-click="viewHistory">
+                                View All -
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <t t-if="state.loading">
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fa fa-spinner fa-spin"/> Loading...
+                                </div>
+                            </t>
+                            <t t-elif="!state.messages.length">
+                                <div class="text-center py-4 text-muted">
+                                    No SMS campaigns yet. Click <strong>Send SMS</strong> to get started.
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Department</th>
+                                            <th class="text-end">Recipients</th>
+                                            <th class="text-end">Sent</th>
+                                            <th class="text-end">Cost (KES)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.messages.slice(0,10)" t-as="msg" t-key="msg.id">
+                                            <tr>
+                                                <td><t t-esc="formatDate(msg.create_date)"/></td>
+                                                <td><span t-att-class="'badge ' + typeBadge(msg.sms_type)"><t t-esc="typeLabel(msg.sms_type)"/></span></td>
+                                                <td><t t-esc="msg.department_id ? msg.department_id[1] : '-'"/></td>
+                                                <td class="text-end"><t t-esc="msg.recipient_count"/></td>
+                                                <td class="text-end"><t t-esc="msg.success_count"/></td>
+                                                <td class="text-end"><t t-esc="formatCost(msg.total_cost)"/></td>
+                                                <td><span t-att-class="'badge ' + stateBadge(msg.state)"><t t-esc="msg.state"/></span></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Department Expenditure (Manager only) -->
+            <t t-if="state.isManager and state.deptStats.length">
+                <div class="row px-3 mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-transparent">
+                                <h6 class="mb-0">
+                                    <i class="fa fa-bar-chart me-2"/>
+                                    Department Expenditure
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Chart Code</th>
+                                            <th>Account No.</th>
+                                            <th>Object Code</th>
+                                            <th class="text-end">Total Cost (KES)</th>
+                                            <th>KFS5</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.deptStats" t-as="dept" t-key="dept.id">
+                                            <tr>
+                                                <td><strong><t t-esc="dept.short_name"/></strong> - <t t-esc="dept.name"/></td>
+                                                <td><t t-esc="dept.chart_code"/></td>
+                                                <td><t t-esc="dept.account_number"/></td>
+                                                <td><t t-esc="dept.object_code"/></td>
+                                                <td class="text-end fw-bold"><t t-esc="formatCost(dept.total_cost)"/></td>
+                                                <td>
+                                                    <t t-if="dept.kfs5_processed">
+                                                        <span class="badge bg-success">Processed</span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="badge bg-warning text-dark">Pending</span>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

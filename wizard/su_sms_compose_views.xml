@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="su_sms_compose_view_form" model="ir.ui.view">
+        <field name="name">su.sms.compose.form</field>
+        <field name="model">su.sms.compose</field>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <form string="Compose SMS">
+                <!-- Step 1: Type + Administrator -->
+                <group string="1 - Select SMS Type and Sender">
+                    <field name="sms_type" widget="radio" options="{'horizontal': true}" required="1"/>
+                    <field name="administrator_id" required="1"/>
+                    <field name="department_id" readonly="1"/>
+                </group>
+
+                <!-- MANUAL mode -->
+                <group string="2 - Recipients" invisible="sms_type != 'manual'">
+                    <field name="manual_numbers" widget="text"
+                           placeholder="Enter phone numbers separated by commas or new lines&#10;+254727374660, 0712345678, ..."
+                           nolabel="1"/>
+                </group>
+
+                <!-- AD HOC CSV mode -->
+                <group string="2 - Upload CSV" invisible="sms_type != 'adhoc'">
+                    <div class="alert alert-info" role="alert">
+                        CSV must have columns: <strong>Name</strong> and <strong>Phone Number</strong>
+                    </div>
+                    <field name="csv_file" widget="binary" filename="csv_filename" nolabel="1"/>
+                    <field name="csv_filename" invisible="1"/>
+                </group>
+
+                <!-- STAFF mode -->
+                <group string="2 - Staff Filters" invisible="sms_type != 'staff'">
+                    <field name="staff_department" placeholder="Leave blank for all"/>
+                    <field name="staff_gender"/>
+                    <field name="staff_category" placeholder="Leave blank for all"/>
+                    <field name="staff_job_status" placeholder="Leave blank for all"/>
+                </group>
+
+                <!-- STUDENT mode -->
+                <group string="2 - Student Filters" invisible="sms_type != 'student'">
+                    <field name="student_school" placeholder="Leave blank for all schools"/>
+                    <field name="student_program" placeholder="Leave blank for all programs"/>
+                    <field name="student_course" placeholder="Leave blank for all courses"/>
+                    <field name="student_year" placeholder="e.g. 1, 2, 3"/>
+                    <field name="student_intake" placeholder="Leave blank for all intakes"/>
+                    <separator string="Recipient Groups"/>
+                    <field name="include_students" widget="boolean_toggle"/>
+                    <field name="include_fathers" widget="boolean_toggle"/>
+                    <field name="include_mothers" widget="boolean_toggle"/>
+                </group>
+
+                <!-- Step 3: Message Body -->
+                <group string="3 - Message">
+                    <field name="body" widget="text" nolabel="1"
+                           placeholder="Type your SMS message here..."
+                           required="1"/>
+                </group>
+
+                <!-- Step 4: Preview (Manual + Ad Hoc) -->
+                <group string="4 - Recipients Preview"
+                       invisible="sms_type not in ['manual', 'adhoc']">
+                    <div class="col-12">
+                        <span class="badge bg-primary me-2">
+                            <field name="recipient_count" readonly="1" nolabel="1"/>
+                            recipients
+                        </span>
+                    </div>
+                    <field name="preview_html" nolabel="1" readonly="1"/>
+                </group>
+
+                <footer>
+                    <button string="Send SMS" type="object" name="action_send"
+                            class="btn-primary" icon="fa-paper-plane" data-hotkey="q"/>
+                    <button string="Discard" special="cancel" class="btn-secondary" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open compose wizard -->
+    <record id="action_su_sms_compose" model="ir.actions.act_window">
+        <field name="name">Send SMS</field>
+        <field name="res_model">su.sms.compose</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
