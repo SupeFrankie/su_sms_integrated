@@ -74,14 +74,12 @@
                                    invisible="sms_type != 'adhoc'"/>
                         </page>
                         <page string="Filters" invisible="sms_type not in ['staff', 'student']">
-                            <!-- Staff -->
                             <group invisible="sms_type != 'staff'">
                                 <field name="staff_department" readonly="1"/>
                                 <field name="staff_gender" readonly="1"/>
                                 <field name="staff_category" readonly="1"/>
                                 <field name="staff_job_status" readonly="1"/>
                             </group>
-                            <!-- Student -->
                             <group invisible="sms_type != 'student'">
                                 <field name="student_school" readonly="1"/>
                                 <field name="student_program" readonly="1"/>
@@ -145,13 +143,12 @@
                         domain="[('kfs5_processed','=',False),('state','=','done')]"/>
                 <separator/>
                 <filter name="this_month" string="This Month"
-                        domain="[('create_date','&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
-                <group expand="0" string="Group By">
-                    <filter name="by_dept" string="Department" context="{'group_by': 'department_id'}"/>
-                    <filter name="by_type" string="SMS Type" context="{'group_by': 'sms_type'}"/>
-                    <filter name="by_admin" string="Administrator" context="{'group_by': 'administrator_id'}"/>
-                    <filter name="by_month" string="Month" context="{'group_by': 'create_date:month'}"/>
-                </group>
+                        domain="[('create_date','&gt;=', datetime.datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0))]"/>
+                <separator/>
+                <filter name="by_dept" string="Group by Department" context="{'group_by': 'department_id'}"/>
+                <filter name="by_type" string="Group by SMS Type" context="{'group_by': 'sms_type'}"/>
+                <filter name="by_admin" string="Group by Administrator" context="{'group_by': 'administrator_id'}"/>
+                <filter name="by_month" string="Group by Month" context="{'group_by': 'create_date:month'}"/>
             </search>
         </field>
     </record>
@@ -189,7 +186,6 @@
         <field name="res_model">su.sms.compose</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_user'))]"/>
     </record>
 
     <!-- Action: SMS History -->
@@ -197,6 +193,5 @@
         <field name="name">SMS History</field>
         <field name="res_model">su.sms.message</field>
         <field name="view_mode">list,pivot,graph,form</field>
-        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_user'))]"/>
     </record>
 </odoo>

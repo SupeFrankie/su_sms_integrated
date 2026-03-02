@@ -52,12 +52,12 @@
                 <field name="department_id"/>
                 <filter name="active" string="Active" domain="[('active', '=', True)]"/>
                 <filter name="disabled" string="Disabled" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter name="group_by_dept" string="Department"
-                            context="{'group_by': 'department_id'}"/>
-                    <filter name="group_by_role" string="Role"
-                            context="{'group_by': 'role'}"/>
-                </group>
+                <separator/>
+                <!-- CHANGED: <group expand="0" string="Group By"> removed - invalid in Odoo 19 -->
+                <filter name="group_by_dept" string="Group by Department"
+                        context="{'group_by': 'department_id'}"/>
+                <filter name="group_by_role" string="Group by Role"
+                        context="{'group_by': 'role'}"/>
             </search>
         </field>
     </record>
@@ -67,6 +67,5 @@
         <field name="name">SMS Administrators</field>
         <field name="res_model">su.sms.administrator</field>
         <field name="view_mode">list,form</field>
-        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_manager'))]"/>
     </record>
 </odoo>

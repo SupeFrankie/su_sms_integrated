@@ -34,7 +34,36 @@
               groups="su_sms_integrated.group_su_sms_user"/>
 
     <!-- ============================================================
-         Admin-only section
+         Reports section (managers only)
+         ADDED: these menu items were missing from the original code, 
+         so I added them based on the defined actions and groups.
+    ============================================================ -->
+    <menuitem id="menu_su_sms_reports_root"
+              name="Reports"
+              parent="menu_su_sms_root"
+              sequence="70"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+
+    <!-- Per-recipient billing detail: pivot + graph + list
+         Shows cost per department × month at the individual SMS level -->
+    <menuitem id="menu_su_sms_billing_report"
+              name="SMS Billing Report"
+              parent="menu_su_sms_reports_root"
+              action="action_su_sms_billing_report"
+              sequence="1"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+
+    <!-- Campaign-level roll-up: total cost per department
+         Useful for month-end KFS5 reconciliation -->
+    <menuitem id="menu_su_sms_dept_expenditure"
+              name="Department Expenditure"
+              parent="menu_su_sms_reports_root"
+              action="action_su_sms_dept_expenditure"
+              sequence="2"
+              groups="su_sms_integrated.group_su_sms_manager"/>
+
+    <!-- ============================================================
+         Administration section (managers only)
     ============================================================ -->
     <menuitem id="menu_su_sms_admin_root"
               name="Administration"

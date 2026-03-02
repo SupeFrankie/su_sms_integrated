@@ -46,6 +46,14 @@ class SuSmsAdministrator(models.Model):
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
     # ------------------------------------------------------------------
+    # Constraints 
+    # ------------------------------------------------------------------
+    _user_unique = models.Constraint(
+        'unique(user_id)',
+        'A user can only have one SMS Administrator record.',
+    )
+
+    # ------------------------------------------------------------------
     # Computed
     # ------------------------------------------------------------------
     @api.depends('name', 'department_id.short_name')
@@ -55,13 +63,8 @@ class SuSmsAdministrator(models.Model):
             rec.display_name = f"{rec.name} ({dept})" if dept else rec.name or ''
 
     # ------------------------------------------------------------------
-    # Constraints
+    # Role -> group sync
     # ------------------------------------------------------------------
-    _sql_constraints = [
-        ('user_unique', 'unique(user_id)',
-         'A user can only have one SMS Administrator record.'),
-    ]
-
     @api.constrains('role')
     def _check_role_groups(self):
         """Sync Odoo security groups to match the assigned role."""
@@ -74,12 +77,10 @@ class SuSmsAdministrator(models.Model):
         }
         for rec in self:
             # Remove from all SU SMS groups first
-            all_group_xmlids = list(role_group_map.values())
             all_groups = self.env['res.groups'].browse()
-            for xmlid in all_group_xmlids:
+            for xmlid in role_group_map.values():
                 try:
-                    g = self.env.ref(xmlid)
-                    all_groups |= g
+                    all_groups |= self.env.ref(xmlid)
                 except Exception:
                     pass
             if all_groups:

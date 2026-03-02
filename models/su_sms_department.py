@@ -3,6 +3,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.su_sms_integrated.tools.kfs5 import SuSmsKfs5Client
+
 
 class SuSmsDepartment(models.Model):
     _name = 'su.sms.department'
@@ -10,131 +12,177 @@ class SuSmsDepartment(models.Model):
     _order = 'name'
     _rec_name = 'name'
 
-    name = fields.Char(
-        string='Department Name',
-        required=True,
-    )
+    name = fields.Char(string='Department Name', required=True)
     short_name = fields.Char(
-        string='Short Name',
-        required=True,
+        string='Short Name', required=True,
         help='Department abbreviation e.g. ICTD',
     )
-    # KFS5 billing codes
     chart_code = fields.Char(
-        string='Chart Code',
-        default='SU',
-        required=True,
+        string='Chart Code', default='SU', required=True,
     )
     account_number = fields.Char(
-        string='Account Number',
-        required=True,
+        string='Account Number', required=True,
         help='KFS5 financial account for SMS billing',
     )
     object_code = fields.Char(
-        string='Object Code',
-        required=True,
+        string='Object Code', required=True,
         help='KFS5 budget object code',
     )
     active = fields.Boolean(default=True)
 
-    # Optionally link to hr.department for display
     hr_department_id = fields.Many2one(
-        'hr.department',
-        string='HR Department',
-        ondelete='set null',
+        'hr.department', string='HR Department', ondelete='set null',
         help='Optional link to Odoo HR department record',
     )
 
     administrator_ids = fields.One2many(
-        'su.sms.administrator',
-        'department_id',
-        string='Administrators',
+        'su.sms.administrator', 'department_id', string='Administrators',
     )
     administrator_count = fields.Integer(
-        compute='_compute_administrator_count',
-        string='Administrators',
+        compute='_compute_administrator_count', string='Administrator Count',
     )
 
     message_ids = fields.One2many(
-        'su.sms.message',
-        'department_id',
-        string='SMS Messages',
+        'su.sms.message', 'department_id', string='SMS Messages',
     )
     message_count = fields.Integer(
-        compute='_compute_message_count',
-        string='SMS Sent',
+        compute='_compute_message_count', string='SMS Sent',
     )
 
-    # Expenditure (computed from su.sms.detail)
     total_cost = fields.Float(
-        compute='_compute_total_cost',
-        string='Total Cost (KES)',
-        digits=(10, 4),
+        compute='_compute_total_cost', string='Total Cost (KES)', digits=(10, 4),
     )
+
     kfs5_processed = fields.Boolean(
         string='KFS5 Processed',
-        help='Whether this period\'s charges have been pushed to KFS5',
+        help="Whether this period's charges have been submitted to KFS5",
     )
-    kfs5_processed_date = fields.Datetime(
-        string='KFS5 Processed Date',
-    )
+    kfs5_processed_date = fields.Datetime(string='KFS5 Processed Date')
 
     # ------------------------------------------------------------------
-    # Computed
+    # Constraints
     # ------------------------------------------------------------------
+    _account_number_unique = models.Constraint(
+        'unique(account_number)',
+        'Account Number must be unique across departments.',
+    )
+
+    @api.constrains('short_name')
+    def _check_short_name(self):
+        for dept in self:
+            if dept.short_name and len(dept.short_name) > 20:
+                raise ValidationError(_('Short name must be 20 characters or fewer.'))
+
+    # ------------------------------------------------------------------
+    # Computed - using _read_group (Odoo 19 API)
+    #
+    # FIX: domain previously passed `self` (recordset object) which raised:
+    #   "domain condition should not have a value which is a model"
+    # Fixed to use `self.ids` (plain list of integers).
+    # ------------------------------------------------------------------
+    @api.depends('administrator_ids')
     def _compute_administrator_count(self):
         for dept in self:
             dept.administrator_count = len(dept.administrator_ids)
 
     def _compute_message_count(self):
-        data = self.env['su.sms.message'].read_group(
-            [('department_id', 'in', self.ids)],
-            ['department_id'],
-            ['department_id'],
+        groups = self.env['su.sms.message']._read_group(
+            [('department_id', 'in', self.ids)],   # FIX: self -> self.ids
+            groupby=['department_id'],
+            aggregates=['__count'],
         )
-        dept_counts = {d['department_id'][0]: d['department_id_count'] for d in data}
+        dept_counts = {dept.id: count for dept, count in groups}
         for dept in self:
             dept.message_count = dept_counts.get(dept.id, 0)
 
     def _compute_total_cost(self):
-        data = self.env['su.sms.detail'].read_group(
-            [('department_id', 'in', self.ids), ('status', '=', 'sent')],
-            ['department_id', 'cost:sum'],
-            ['department_id'],
+        groups = self.env['su.sms.detail']._read_group(
+            [('department_id', 'in', self.ids),    # FIX: self -> self.ids
+             ('status', '=', 'sent')],
+            groupby=['department_id'],
+            aggregates=['cost:sum'],
         )
-        cost_map = {d['department_id'][0]: d['cost'] for d in data}
+        cost_map = {dept.id: cost_sum for dept, cost_sum in groups}
         for dept in self:
             dept.total_cost = cost_map.get(dept.id, 0.0)
 
     # ------------------------------------------------------------------
-    # Constraints
+    # KFS5 - Cron entry point
+    # Called by ir.cron "SU SMS: Monthly KFS5 Billing Submission"
     # ------------------------------------------------------------------
-    _sql_constraints = [
-        ('account_number_unique', 'unique(account_number)',
-         'Account Number must be unique across departments.'),
-    ]
+    @api.model
+    def action_kfs5_submit_monthly(self):
+        """
+        Monthly cron entry point. Submits all active departments' unprocessed
+        charges to KFS5. Called on the 1st of each month at 02:00.
 
-    @api.constrains('short_name')
-    def _check_short_name(self):
-        for dept in self:
-            if len(dept.short_name) > 20:
-                raise ValidationError(_('Short name must be 20 characters or fewer.'))
+        Uses raise_on_config_error=False so a misconfigured system parameter
+        logs a warning but does NOT crash the cron job or trigger a rollback.
+        """
+        client = SuSmsKfs5Client(self.env, raise_on_config_error=False)
+        results = client.submit_department_charges()
+
+        # Log a clean summary at INFO level so it's easy to spot in the logs
+        for name, ok, msg in results:
+            level = 'info' if ok else 'error'
+            getattr(_logger, level)("KFS5 monthly: %s — %s", name, msg)
 
     # ------------------------------------------------------------------
-    # Actions
+    # KFS5 - Manual button (interactive, raises UserError on failure)
+    # Kept for use from the department form view by system managers.
+    # ------------------------------------------------------------------
+    def action_kfs5_submit_now(self):
+        """
+        Manual 'Submit to KFS5 Now' button. Processes only this department.
+        Raises UserError on misconfiguration so the user sees a clear message.
+        """
+        self.ensure_one()
+        client = SuSmsKfs5Client(self.env, raise_on_config_error=True)
+        results = client.submit_department_charges(department_ids=[self.id])
+        name, ok, msg = results[0] if results else (self.name, False, 'No result')
+        if not ok:
+            raise ValidationError(
+                _("KFS5 submission failed for %s:\n%s", self.name, msg)
+            )
+        return {
+            'type': 'ir.actions.client',
+            'tag':  'display_notification',
+            'params': {
+                'title':   _('KFS5 Submitted'),
+                'message': _('%s: %s', self.name, msg),
+                'type':    'success',
+                'sticky':  False,
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Mark processed manually (without calling KFS5 API)
+    # ------------------------------------------------------------------
+    def action_mark_kfs5_processed(self):
+        self.write({
+            'kfs5_processed':      True,
+            'kfs5_processed_date': fields.Datetime.now(),
+        })
+
+    # ------------------------------------------------------------------
+    # Navigation actions
     # ------------------------------------------------------------------
     def action_view_messages(self):
         return {
-            'name': _('SMS Messages - %s') % self.name,
-            'type': 'ir.actions.act_window',
+            'name':      _('SMS Messages - %s') % self.name,
+            'type':      'ir.actions.act_window',
             'res_model': 'su.sms.message',
             'view_mode': 'list,form',
-            'domain': [('department_id', '=', self.id)],
-            'context': {'default_department_id': self.id},
+            'domain':    [('department_id', '=', self.id)],
+            'context':   {'default_department_id': self.id},
         }
 
-    def action_mark_kfs5_processed(self):
-        self.write({
-            'kfs5_processed': True,
-            'kfs5_processed_date': fields.Datetime.now(),
-        })
+    def action_view_administrators(self):
+        return {
+            'name':      _('Administrators - %s') % self.name,
+            'type':      'ir.actions.act_window',
+            'res_model': 'su.sms.administrator',
+            'view_mode': 'list,form',
+            'domain':    [('department_id', '=', self.id)],
+            'context':   {'default_department_id': self.id},
+        }

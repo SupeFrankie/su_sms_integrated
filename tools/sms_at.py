@@ -13,10 +13,10 @@ _logger = logging.getLogger(__name__)
 _DEFAULT_COUNTRY_CODE = '254'
 
 AT_PRODUCTION_ENDPOINT = 'https://api.africastalking.com/version1/messaging'
-AT_SANDBOX_ENDPOINT = 'https://sandbox.africastalking.com/version1/messaging'
+AT_SANDBOX_ENDPOINT = 'https://api.sandbox.africastalking.com/version1/messaging'
 
 AT_BALANCE_PRODUCTION = 'https://api.africastalking.com/version1/user'
-AT_BALANCE_SANDBOX = 'https://sandbox.africastalking.com/version1/user'
+AT_BALANCE_SANDBOX = 'https://api.sandbox.africastalking.com/version1/user'
 
 
 def get_at_messaging_endpoint(company):

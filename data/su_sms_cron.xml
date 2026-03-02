@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        SU SMS - Monthly KFS5 Billing Submission
+        ═══════════════════════════════════════════════════════════
+        Fires on the 1st of each month at 02:00 server time.
+        Calls su.sms.department.action_kfs5_submit_monthly() which:
+          1. Finds all active departments
+          2. Sums their unprocessed (kfs5_processed=False) sent detail lines
+          3. POSTs a Journal Voucher to KFS5 for each department with charges
+          4. Marks the processed messages and department records accordingly
+          5. Logs a summary — check server logs or Settings > Scheduled Actions
+             -> "SU SMS: Monthly KFS5 Billing" -> Logs tab for results
+
+        Configuration required BEFORE this will submit anything:
+          Settings > Technical > Parameters > System Parameters
+            su_sms.kfs5_api_url    - KFS5 REST endpoint URL
+            su_sms.kfs5_username   - API username
+            su_sms.kfs5_password   - API password / token
+            su_sms.kfs5_chart_code - Chart code (default: SU)
+
+        If parameters are not set the cron logs a warning and exits cleanly.
+        It does NOT raise errors or cause rollbacks.
+
+        To trigger manually:
+          Settings > Technical > Scheduled Actions
+          -> "SU SMS: Monthly KFS5 Billing Submission" -> Run Manually
+    -->
+    <record id="ir_cron_su_sms_kfs5_monthly" model="ir.cron">
+        <field name="name">SU SMS: Monthly KFS5 Billing Submission</field>
+        <field name="model_id" ref="model_su_sms_department"/>
+        <field name="state">code</field>
+        <field name="code">model.action_kfs5_submit_monthly()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+        <!--
+            nextcall is the date+time of the FIRST run.
+            Set to the 1st of the next calendar month at 02:00.
+            Odoo will advance by 1 month after each successful run.
+            Adjust the year/month below when deploying.
+        -->
+        <field name="nextcall">2026-03-01 02:00:00</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="priority">10</field>
+    </record>
+</odoo>

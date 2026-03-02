@@ -18,7 +18,7 @@
                     <div class="d-flex align-items-center">
                         <field name="at_username" placeholder="e.g. Strathmore or sandbox"/>
                         <a href="https://account.africastalking.com/" target="_blank"
-                           class="btn btn-link ms-2">
+                           role="button" class="btn btn-link ms-2">
                             AT Dashboard <i class="fa fa-external-link"/>
                         </a>
                     </div>

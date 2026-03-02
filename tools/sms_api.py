@@ -26,7 +26,7 @@ Returns results in standard Odoo format:
 """
 import logging
 
-import requests
+import africastalking
 
 from odoo import _
 from odoo.addons.sms.tools.sms_api import SmsApiBase
@@ -34,7 +34,6 @@ from odoo.addons.sms.tools.sms_api import SmsApiBase
 from odoo.addons.su_sms_integrated.tools.sms_at import (
     AT_STATUS_TO_ODOO_FAILURE,
     AT_SUCCESS_STATUSES,
-    get_at_messaging_endpoint,
     normalize_phone_number,
     parse_at_cost,
 )
@@ -53,32 +52,12 @@ class SmsApiAT(SmsApiBase):
         'at_insufficient_balance': 'at_insufficient_balance',
         'at_invalid_sender': 'at_invalid_sender',
         'at_number_format': 'sms_number_format',
+        'sms_server': 'sms_server',
+        'sms_number_format': 'sms_number_format',
+        'sms_blacklist': 'sms_blacklist',
+        'sms_acc': 'sms_acc',
+        'sms_number_missing': 'sms_number_missing',
     }
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-    def _get_at_headers(self):
-        company = (self.company or self.env.company).sudo()
-        return {
-            'apiKey': company.at_api_key or '',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
-        }
-
-    def _build_at_request(self, to_numbers, body):
-        """Build the POST payload for the AT messaging API."""
-        company = (self.company or self.env.company).sudo()
-        payload = {
-            'username': company.at_username or '',
-            'to': ','.join(to_numbers),
-            'message': body,
-            'bulkSMSMode': '1',
-        }
-        sender_id = company.at_sender_id
-        if sender_id:
-            payload['from'] = sender_id
-        return payload
 
     # ------------------------------------------------------------------
     # Core send - called by sms.sms._send_with_api
@@ -93,11 +72,8 @@ class SmsApiAT(SmsApiBase):
         :return: list of per-UUID result dicts
         """
         company = (self.company or self.env.company).sudo()
-        endpoint = get_at_messaging_endpoint(company)
-        headers = self._get_at_headers()
 
         results = []
-        session = requests.Session()
 
         for message in messages:
             body = message.get('content') or ''
@@ -133,11 +109,9 @@ class SmsApiAT(SmsApiBase):
                         ))
                     continue
 
-                payload = self._build_at_request(to_list, body)
-                at_response = self._call_at_api(session, endpoint, headers, payload)
+                at_response = self._call_at_api(company, to_list, body)
 
                 if at_response is None:
-                    # Network error - all fail with server error
                     for info in chunk:
                         results.append(self._at_failure_result(
                             info['uuid'], 'sms_server',
@@ -145,37 +119,22 @@ class SmsApiAT(SmsApiBase):
                         ))
                     continue
 
-                # Parse AT response and match back to uuid by number
                 results.extend(
                     self._parse_at_response(at_response, chunk, uuid_to_normalized)
                 )
 
         return results
 
-    def _call_at_api(self, session, endpoint, headers, payload):
-        """Make HTTP call to AT. Returns parsed JSON or None on network error."""
+    def _call_at_api(self, company, recipient_list, message_body):
+        """Send SMS via official Africa's Talking SDK. Returns response dict or None on error."""
         try:
-            response = session.post(
-                endpoint,
-                data=payload,
-                headers=headers,
-                timeout=30,
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.Timeout:
-            _logger.warning("AT SMS API timeout")
-        except requests.exceptions.ConnectionError as exc:
-            _logger.warning("AT SMS API connection error: %s", exc)
-        except requests.exceptions.HTTPError as exc:
-            _logger.warning("AT SMS API HTTP error %s: %s", exc.response.status_code, exc)
-            try:
-                return exc.response.json()
-            except Exception:
-                pass
+            africastalking.initialize(company.at_username or '', company.at_api_key or '')
+            sms = africastalking.SMS
+            response = sms.send(message_body, recipient_list)
+            return response
         except Exception as exc:
-            _logger.warning("AT SMS API unexpected error: %s", exc)
-        return None
+            _logger.warning("AT SMS API error: %s", exc)
+            return None
 
     def _parse_at_response(self, at_data, chunk, uuid_to_normalized):
         """
@@ -215,7 +174,6 @@ class SmsApiAT(SmsApiBase):
             at_rec = at_by_number.get(normalized) if normalized else None
 
             if at_rec is None:
-                # AT didn't return a result for this number - mark as server error
                 results.append(self._at_failure_result(
                     uuid, 'sms_server',
                     _("Africa's Talking did not return a result for this number"),

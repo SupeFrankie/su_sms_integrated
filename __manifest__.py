@@ -24,21 +24,28 @@ Features
         'phone_validation',
     ],
     'data': [
-        # Security - load FIRST
-        'security/su_sms_security.xml',
-        'security/ir.model.access.csv',
-        # Data
-        'data/su_sms_data.xml',
-        # Wizards
-        'wizard/su_sms_account_manage_views.xml',
-        'wizard/su_sms_compose_views.xml',
-        # Views
-        'views/res_config_settings_views.xml',
-        'views/su_sms_department_views.xml',
-        'views/su_sms_administrator_views.xml',
-        'views/su_sms_message_views.xml',
-        'views/su_sms_dashboard_views.xml',
-        'views/su_sms_menu.xml',
+    # Security
+    'security/su_sms_security.xml',
+    'security/ir.model.access.csv',
+
+    # Data
+    'data/su_sms_data.xml',
+    'data/su_sms_cron.xml',
+
+    # Wizards
+    'wizard/su_sms_account_manage_views.xml',
+    'wizard/su_sms_compose_views.xml',
+
+    # Views
+    'views/res_config_settings_views.xml',
+    'views/su_sms_department_views.xml',
+    'views/su_sms_administrator_views.xml',
+    'views/su_sms_message_views.xml',
+    'views/su_sms_dashboard_views.xml',
+    'views/su_sms_reporting_views.xml',
+
+    # Menu MUST be last
+    'views/su_sms_menu.xml',
     ],
     'assets': {
         'web.assets_backend': [

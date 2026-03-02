@@ -1,5 +1,49 @@
 # wizard/su_sms_compose.py
 
+
+"""
+SU SMS Compose Wizard.
+
+Handles all 4 SMS types:
+  manual  - comma/newline separated phone numbers
+  adhoc   - CSV upload (firstname, lastname, phone_number, mobile_number)
+  staff   - fetch from juba.strathmore.edu data service with HR filters
+  student - fetch from juba.strathmore.edu data service with academic filters
+
+Credit balance enforcement (AT balance checked before every send):
+  balance <= 0          - ALL users blocked
+  balance < 15,000 KES  - only group_su_sms_manager can send
+  balance < 80 KES      - warning logged, send still allowed for managers
+
+=======================================================
+PERMANENT FIX: TypeError: unhashable type: 'dict'
+=======================================================
+Root cause (Odoo 19 onchange bug):
+
+  Step 1  User changes administrator_id.
+  Step 2  The ORM computes department_id (Many2one) and puts it into
+          the onchange response as a dict:
+            {'department_id': {'id': 4, 'display_name': 'ICTD'}}
+  Step 3  The Owl frontend stores this value and sends it back on the
+          NEXT interaction in changed_values.
+  Step 4  _update_cache iterates changed_values. When it reaches a
+          Selection field (e.g. staff_gender), Odoo 19's selection dict
+          lookup does:
+            if value in self._selection   <- value is a dict -> unhashable
+
+The crash only appears on the SECOND onchange call (confirmed by the
+17:01:38 log entry being ~2 min after the wizard opened at 16:59:23).
+
+THE FIX: department_id must not exist as Many2one in this wizard
+at all - not as related=, not as compute=. A Many2one field in a
+TransientModel form view is serialised as a dict by Owl, and that dict
+poisons all subsequent onchange calls.
+
+Replace with department_name (Char), a plain string that is never
+involved in the Selection cache validation path.
+==========================================================================
+"""
+
 import base64
 import csv
 import io
@@ -7,6 +51,8 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+from odoo.addons.su_sms_integrated.tools.webservice import SuSmsWebService
 
 _logger = logging.getLogger(__name__)
 
@@ -16,12 +62,12 @@ class SuSmsCompose(models.TransientModel):
     _description = 'SU SMS Compose Wizard'
 
     # ------------------------------------------------------------------
-    # Step 1: Type + Message
+    # Type + Message
     # ------------------------------------------------------------------
     sms_type = fields.Selection([
-        ('manual', 'Manual (Direct Numbers)'),
-        ('adhoc', 'Ad Hoc (CSV Upload)'),
-        ('staff', 'Staff SMS'),
+        ('manual',  'Manual (Direct Numbers)'),
+        ('adhoc',   'Ad Hoc (CSV Upload)'),
+        ('staff',   'Staff SMS'),
         ('student', 'Student SMS'),
     ], string='SMS Type', required=True, default='manual')
 
@@ -33,10 +79,16 @@ class SuSmsCompose(models.TransientModel):
         required=True,
         default=lambda self: self._default_admin(),
     )
-    department_id = fields.Many2one(
-        'su.sms.department',
-        related='administrator_id.department_id',
+
+    # department_name (Char) shows the same information safely because:
+    #   • Char.convert_to_cache receives a string, never a dict
+    #   • It cannot be confused with a Selection field's cache path
+    #   • The view uses this field for display only (readonly)
+    
+    department_name = fields.Char(
         string='Department',
+        compute='_compute_department_name',
+        store=False,
         readonly=True,
     )
 
@@ -45,38 +97,49 @@ class SuSmsCompose(models.TransientModel):
     # ------------------------------------------------------------------
     manual_numbers = fields.Text(
         string='Phone Numbers',
-        help='Comma or newline separated phone numbers. E.g. +254727374660, 0712345678',
+        help='Comma or newline separated. E.g. +254727374660, 0712345678',
     )
 
     # ------------------------------------------------------------------
     # Ad Hoc CSV
     # ------------------------------------------------------------------
-    csv_file = fields.Binary('CSV File')
+    csv_file     = fields.Binary('CSV File')
     csv_filename = fields.Char('Filename')
 
     # ------------------------------------------------------------------
     # Staff filters
     # ------------------------------------------------------------------
-    staff_department = fields.Char('Department')
+    staff_department = fields.Char(
+        'Department Filter',
+        help='Leave blank to fetch all departments. Staff Admins are '
+             'automatically scoped to their own department.',
+    )
     staff_gender = fields.Selection([
         ('all', 'All Genders'),
-        ('M', 'Male'),
-        ('F', 'Female'),
+        ('M',   'Male'),
+        ('F',   'Female'),
     ], default='all', string='Gender')
-    staff_category = fields.Char('Category')
-    staff_job_status = fields.Char('Job Status')
+    staff_category   = fields.Char('Category')
+    staff_job_status = fields.Char('Job Status Type')
 
     # ------------------------------------------------------------------
     # Student filters
     # ------------------------------------------------------------------
-    student_school = fields.Char('School')
-    student_program = fields.Char('Program')
-    student_course = fields.Char('Course')
-    student_year = fields.Char('Year of Study')
-    student_intake = fields.Char('Intake')
-    include_students = fields.Boolean('Include Students', default=True)
-    include_fathers = fields.Boolean('Include Fathers')
-    include_mothers = fields.Boolean('Include Mothers')
+    student_school           = fields.Char('School')
+    student_program          = fields.Char('Program')
+    student_course           = fields.Char('Course')
+    student_year             = fields.Char('Year of Study')
+    student_intake           = fields.Char('Intake')
+    student_modular          = fields.Boolean(
+        'Modular Programme',
+        help='Use modular endpoint (enrolment period + module) instead of '
+             'academic year',
+    )
+    student_enrolment_period = fields.Char('Enrolment Period')
+    student_module           = fields.Char('Module')
+    include_students         = fields.Boolean('Include Students', default=True)
+    include_fathers          = fields.Boolean('Include Fathers')
+    include_mothers          = fields.Boolean('Include Mothers')
 
     # ------------------------------------------------------------------
     # Preview
@@ -102,39 +165,56 @@ class SuSmsCompose(models.TransientModel):
         return admin.id if admin else False
 
     # ------------------------------------------------------------------
-    # Preview compute
+    # Computed: department_name (Char - safe for onchange)
+    # ------------------------------------------------------------------
+    @api.depends('administrator_id')
+    def _compute_department_name(self):
+        for rec in self:
+            dept = rec.administrator_id.department_id
+            rec.department_name = dept.name if dept else ''
+
+    # ------------------------------------------------------------------
+    # Preview
     # ------------------------------------------------------------------
     @api.depends('sms_type', 'manual_numbers', 'csv_file')
     def _compute_preview(self):
         for rec in self:
-            numbers = rec._get_numbers_list()
+            numbers = []
+            if rec.sms_type == 'manual':
+                numbers = rec._parse_manual_numbers()
+            elif rec.sms_type == 'adhoc':
+                numbers = rec._parse_csv_numbers()
+
             rec.recipient_count = len(numbers)
             if numbers:
                 rows = ''.join(
                     f'<tr><td>{i + 1}</td><td>{n[0]}</td><td>{n[1]}</td></tr>'
                     for i, n in enumerate(numbers[:50])
                 )
-                more = f'<tr><td colspan="3">... and {len(numbers) - 50} more</td></tr>' if len(numbers) > 50 else ''
+                more = (
+                    f'<tr><td colspan="3" class="text-muted">'
+                    f'… and {len(numbers) - 50} more</td></tr>'
+                    if len(numbers) > 50 else ''
+                )
                 rec.preview_html = (
-                    f'<table class="table table-sm table-bordered">'
-                    f'<thead><tr><th>#</th><th>Name</th><th>Number</th></tr></thead>'
+                    '<table class="table table-sm table-bordered">'
+                    '<thead><tr><th>#</th><th>Name</th><th>Number</th></tr></thead>'
                     f'<tbody>{rows}{more}</tbody></table>'
+                )
+            elif rec.sms_type in ('staff', 'student'):
+                rec.preview_html = (
+                    '<p class="text-info">'
+                    '<i class="fa fa-info-circle"/> '
+                    'Recipients will be fetched from the web service when you '
+                    'click <strong>Send SMS</strong>.'
+                    '</p>'
                 )
             else:
                 rec.preview_html = '<p class="text-muted">No recipients yet.</p>'
 
-    def _get_numbers_list(self):
-        """Return list of (name, number) tuples based on current sms_type."""
-        if self.sms_type == 'manual':
-            return self._parse_manual_numbers()
-        elif self.sms_type == 'adhoc':
-            return self._parse_csv_numbers()
-        elif self.sms_type in ('staff', 'student'):
-            # For webservice-based types, we can't preview without actual WS call
-            # Return empty - the message will be built when sending
-            return []
-        return []
-
+    # ------------------------------------------------------------------
+    # Number parsers
+    # ------------------------------------------------------------------
     def _parse_manual_numbers(self):
         if not self.manual_numbers:
             return []
@@ -142,137 +222,264 @@ class SuSmsCompose(models.TransientModel):
         return [('', n.strip()) for n in raw.split(',') if n.strip()]
 
     def _parse_csv_numbers(self):
+        """
+        Supports new template (firstname, lastname, phone_number, mobile_number)
+        and legacy format (Name, Phone Number).
+        phone_number is preferred; mobile_number used as fallback if blank.
+        """
         if not self.csv_file:
             return []
         try:
-            data = base64.b64decode(self.csv_file)
-            reader = csv.DictReader(io.StringIO(data.decode('utf-8', errors='replace')))
+            data   = base64.b64decode(self.csv_file)
+            reader = csv.DictReader(
+                io.StringIO(data.decode('utf-8', errors='replace'))
+            )
             results = []
             for row in reader:
-                phone = (row.get('Phone Number') or row.get('phone_number')
-                         or row.get('Phone') or row.get('phone') or '').strip()
-                name = (row.get('Name') or row.get('name') or '').strip()
+                firstname = (
+                    row.get('firstname') or row.get('first_name') or ''
+                ).strip()
+                lastname = (
+                    row.get('lastname') or row.get('last_name') or ''
+                ).strip()
+                if firstname or lastname:
+                    name = f"{firstname} {lastname}".strip()
+                else:
+                    name = (row.get('Name') or row.get('name') or '').strip()
+
+                phone = (
+                    row.get('phone_number') or
+                    row.get('Phone Number') or
+                    row.get('Phone') or
+                    row.get('phone') or ''
+                ).strip()
+                if not phone:
+                    phone = (
+                        row.get('mobile_number') or
+                        row.get('Mobile Number') or
+                        row.get('mobile') or ''
+                    ).strip()
+
                 if phone:
                     results.append((name, phone))
             return results
         except Exception as exc:
-            _logger.warning("CSV parse error: %s", exc)
+            _logger.warning("SU SMS CSV parse error: %s", exc)
             return []
+
+    # ------------------------------------------------------------------
+    # CSV template download
+    # ------------------------------------------------------------------
+    def action_download_csv_template(self):
+        return {
+            'type':   'ir.actions.act_url',
+            'url':    '/su_sms/adhoc_template.csv',
+            'target': 'new',
+        }
+
+    # ------------------------------------------------------------------
+    # Internal helper: get actual department record (never in onchange)
+    # ------------------------------------------------------------------
+    def _get_department(self):
+        """Use this inside action methods only - never in computed fields."""
+        return self.administrator_id.department_id
 
     # ------------------------------------------------------------------
     # Role-based access check
     # ------------------------------------------------------------------
-    def _check_access(self):
-        """Verify the user is allowed to send this SMS type."""
-        user = self.env.user
-        if user.has_group('su_sms_integrated.group_su_sms_manager'):
-            return  # full access
+    def _check_sms_access(self):
+        user       = self.env.user
+        is_manager = user.has_group('su_sms_integrated.group_su_sms_manager')
+
         if self.sms_type == 'student' and not user.has_group(
             'su_sms_integrated.group_su_sms_faculty_admin'
         ):
             raise UserError(_("You do not have permission to send Student SMS."))
+
         if self.sms_type == 'staff' and not user.has_group(
             'su_sms_integrated.group_su_sms_staff_admin'
         ):
             raise UserError(_("You do not have permission to send Staff SMS."))
 
+        if (self.sms_type == 'staff'
+                and not is_manager
+                and not user.has_group('su_sms_integrated.group_su_sms_admin')
+                and self.administrator_id.department_id
+                and self.staff_department):
+            dept_short = self.administrator_id.department_id.short_name
+            if self.staff_department != dept_short:
+                raise UserError(_(
+                    "Staff Administrators can only send SMS to their own "
+                    "department (%s).",
+                    dept_short,
+                ))
+
     # ------------------------------------------------------------------
-    # Send
+    # Credit balance enforcement
+    # ------------------------------------------------------------------
+    def _enforce_credit_balance(self):
+        cfg = self.env['ir.config_parameter'].sudo()
+        try:
+            icts_threshold = float(
+                cfg.get_param('su_sms.icts_threshold', '15000')
+            )
+            min_credit = float(
+                cfg.get_param('su_sms.minimum_credit', '80')
+            )
+        except (ValueError, TypeError):
+            icts_threshold, min_credit = 15000.0, 80.0
+
+        try:
+            balance_str = self.env.company._get_at_balance()
+            parts       = str(balance_str).split()
+            balance     = float(parts[-1]) if parts else 0.0
+        except Exception as exc:
+            _logger.warning(
+                "SU SMS: could not verify AT balance before send: %s", exc
+            )
+            return  # Don't block if balance endpoint unreachable
+
+        is_manager = self.env.user.has_group(
+            'su_sms_integrated.group_su_sms_manager'
+        )
+
+        if balance <= 0:
+            raise UserError(_(
+                "The Africa's Talking credit balance is KES 0.00.\n"
+                "SMS sending has been disabled until the account is topped up.\n"
+                "Please contact ICT Services."
+            ))
+
+        if balance < icts_threshold and not is_manager:
+            raise UserError(_(
+                "The Africa's Talking balance (KES %.2f) is below the minimum "
+                "operational threshold (KES %.2f).\n"
+                "Only System Administrators can send SMS at this time.\n"
+                "Please contact ICT Services to top up the account.",
+                balance, icts_threshold,
+            ))
+
+        if balance < min_credit:
+            _logger.warning(
+                "SU SMS: AT balance KES %.2f is below the low-balance warning "
+                "level (KES %.2f). Consider topping up.",
+                balance, min_credit,
+            )
+
+    # ------------------------------------------------------------------
+    # Staff department auto-scoping
+    # ------------------------------------------------------------------
+    def _resolve_staff_department_filter(self):
+        user       = self.env.user
+        is_manager = user.has_group('su_sms_integrated.group_su_sms_manager')
+        is_admin   = user.has_group('su_sms_integrated.group_su_sms_admin')
+
+        if not is_manager and not is_admin:
+            dept = self.administrator_id.department_id
+            return dept.short_name if dept else self.staff_department or None
+
+        return self.staff_department or None
+
+    # ------------------------------------------------------------------
+    # Web service fetch
+    # ------------------------------------------------------------------
+    def _fetch_recipients_from_webservice(self):
+        ws = SuSmsWebService(self.env)
+
+        if self.sms_type == 'staff':
+            return ws.get_staff(
+                department=self._resolve_staff_department_filter(),
+                gender=self.staff_gender,
+                category=self.staff_category    or None,
+                job_status=self.staff_job_status or None,
+            )
+
+        if self.sms_type == 'student':
+            return ws.get_students(
+                school=self.student_school                     or None,
+                program=self.student_program                   or None,
+                course=self.student_course                     or None,
+                student_year=self.student_year                 or None,
+                enrolment_period=self.student_enrolment_period or None,
+                module=self.student_module                     or None,
+                intake=self.student_intake                     or None,
+                include_students=self.include_students,
+                include_fathers=self.include_fathers,
+                include_mothers=self.include_mothers,
+                modular=self.student_modular,
+            )
+
+        raise UserError(
+            _("Unknown SMS type '%s' for web service fetch.", self.sms_type)
+        )
+
+    # ------------------------------------------------------------------
+    # Main send action
     # ------------------------------------------------------------------
     def action_send(self):
         self.ensure_one()
-        self._check_access()
+        self._check_sms_access()
 
         if not self.body or not self.body.strip():
             raise UserError(_("Message body cannot be empty."))
         if not self.administrator_id:
-            raise UserError(_("No SMS administrator profile found for your user. "
-                               "Please ask your system administrator to set one up."))
+            raise UserError(_(
+                "No SMS administrator profile found for your user. "
+                "Please ask your system administrator to create one."
+            ))
 
-        # Gather recipients
+        self._enforce_credit_balance()
+
         if self.sms_type == 'manual':
             pairs = self._parse_manual_numbers()
         elif self.sms_type == 'adhoc':
             pairs = self._parse_csv_numbers()
         else:
-            # staff / student - must be populated by webservice
-            # For now raise; the real integration calls an external WS
             pairs = self._fetch_recipients_from_webservice()
 
         if not pairs:
-            raise UserError(_("No valid phone numbers found. Please check your input."))
+            raise UserError(
+                _("No valid phone numbers found. Please check your input.")
+            )
 
-        # Create su.sms.message campaign record
         message = self.env['su.sms.message'].create({
-            'body': self.body,
-            'sms_type': self.sms_type,
+            'body':             self.body,
+            'sms_type':         self.sms_type,
             'administrator_id': self.administrator_id.id,
-            'manual_numbers': self.manual_numbers,
-            'csv_file': self.csv_file,
-            'csv_filename': self.csv_filename,
-            # Staff filters
+            'manual_numbers':   self.manual_numbers,
+            'csv_file':         self.csv_file,
+            'csv_filename':     self.csv_filename,
             'staff_department': self.staff_department,
-            'staff_gender': self.staff_gender,
-            'staff_category': self.staff_category,
+            'staff_gender':     self.staff_gender,
+            'staff_category':   self.staff_category,
             'staff_job_status': self.staff_job_status,
-            # Student filters
-            'student_school': self.student_school,
-            'student_program': self.student_program,
-            'student_course': self.student_course,
-            'student_year': self.student_year,
-            'student_intake': self.student_intake,
+            'student_school':   self.student_school,
+            'student_program':  self.student_program,
+            'student_course':   self.student_course,
+            'student_year':     self.student_year,
+            'student_intake':   self.student_intake,
             'include_students': self.include_students,
-            'include_fathers': self.include_fathers,
-            'include_mothers': self.include_mothers,
+            'include_fathers':  self.include_fathers,
+            'include_mothers':  self.include_mothers,
         })
 
-        # Create detail lines
-        detail_vals = [
+        self.env['su.sms.detail'].create([
             {
-                'message_id': message.id,
+                'message_id':     message.id,
                 'recipient_name': name,
-                'phone_number': number,
-                'status': 'pending',
+                'phone_number':   number,
+                'status':         'pending',
             }
             for name, number in pairs
-        ]
-        self.env['su.sms.detail'].create(detail_vals)
+        ])
 
-        # Trigger send
         message.action_send()
 
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('SMS Campaign'),
+            'type':      'ir.actions.act_window',
+            'name':      _('SMS Campaign'),
             'res_model': 'su.sms.message',
-            'res_id': message.id,
+            'res_id':    message.id,
             'view_mode': 'form',
-            'target': 'current',
+            'target':    'current',
         }
-
-    def _fetch_recipients_from_webservice(self):
-        """
-        Placeholder for external web service integration.
-        Returns list of (name, phone) tuples.
-
-        Implement this to call your SU Data Web Service:
-        - Staff: GET {WEBSERVICE_BASE_URL}/staff/getStaffBy?dept=...&gender=...
-        - Student: GET {WEBSERVICE_BASE_URL}/student/getStudentsAcademic?school=...
-        """
-        _logger.info(
-            "SU SMS: webservice fetch for type=%s dept=%s school=%s",
-            self.sms_type, self.staff_department, self.student_school,
-        )
-        # TODO: implement real web service call
-        # Example stub:
-        # import requests
-        # base_url = self.env['ir.config_parameter'].sudo().get_param('su_sms.webservice_base_url')
-        # if self.sms_type == 'staff':
-        #     response = requests.get(f'{base_url}/staff/getAllStaff', timeout=30)
-        #     data = response.json()
-        #     return [(r.get('name'), r.get('phone')) for r in data if r.get('phone')]
-        raise UserError(_(
-            "Web service integration is not yet configured.\n"
-            "Please contact your system administrator to set up the "
-            "SU Data Web Service connection (su_sms.webservice_base_url)."
-        ))

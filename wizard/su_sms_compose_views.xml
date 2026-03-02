@@ -6,11 +6,46 @@
         <field name="mode">primary</field>
         <field name="arch" type="xml">
             <form string="Compose SMS">
+
                 <!-- Step 1: Type + Administrator -->
                 <group string="1 - Select SMS Type and Sender">
-                    <field name="sms_type" widget="radio" options="{'horizontal': true}" required="1"/>
+                    <field name="sms_type" widget="radio"
+                           options="{'horizontal': true}" required="1"/>
                     <field name="administrator_id" required="1"/>
-                    <field name="department_id" readonly="1"/>
+
+                    <!--
+                        PERMANENT FIX: was <field name="department_id" readonly="1"/>
+
+                        department_id (Many2one) caused:
+                            TypeError: unhashable type: 'dict'
+                        on the SECOND onchange call in Odoo 19.
+
+                        Mechanism:
+                          1. administrator_id changes -> _compute_department_id fires
+                          2. Odoo serialises department_id record as a dict in the
+                             onchange response: {'id': 4, 'display_name': 'ICTD'}
+                          3. Frontend stores that dict as the field value
+                          4. User does anything -> frontend sends changed_values
+                             including department_id: {dict}
+                          5. _update_cache iterates fields -> hits a Selection field
+                             (staff_gender / sms_type) -> Selection._selection is a
+                             dict in Odoo 19 -> `if dict_value in sel_dict` requires
+                             hashing -> TypeError
+
+                        The crash does NOT appear on the first onchange (wizard open)
+                        because department_id hasn't been echoed back by the frontend
+                        yet. It appears on the SECOND interaction (confirmed: 17:01:38
+                        log, ~2 min after wizard opened at 16:59:23).
+
+                        Fix: replace with department_name (Char). A Char field value
+                        is always a plain string; it never enters the Selection cache
+                        validation path regardless of what the frontend echoes back.
+
+                        DO NOT change this back to a Many2one - not as related=,
+                        not as compute=, not as any variant. The field type itself
+                        is the problem, not how it is populated.
+                    -->
+                    <field name="department_name" readonly="1"/>
                 </group>
 
                 <!-- MANUAL mode -->
@@ -23,10 +58,21 @@
                 <!-- AD HOC CSV mode -->
                 <group string="2 - Upload CSV" invisible="sms_type != 'adhoc'">
                     <div class="alert alert-info" role="alert">
-                        CSV must have columns: <strong>Name</strong> and <strong>Phone Number</strong>
+                        CSV columns: <strong>firstname</strong>, <strong>lastname</strong>,
+                        <strong>phone_number</strong>, <strong>mobile_number</strong>.
+                        Download the template below, fill it in, then upload.
                     </div>
-                    <field name="csv_file" widget="binary" filename="csv_filename" nolabel="1"/>
+
+                    <field name="csv_file" widget="binary"
+                           filename="csv_filename" nolabel="1"/>
                     <field name="csv_filename" invisible="1"/>
+
+                    <button name="action_download_csv_template"
+                            string="Download Template"
+                            type="object"
+                            icon="fa-download"
+                            class="oe_link"
+                            title="Download a blank CSV template to fill in and upload"/>
                 </group>
 
                 <!-- STAFF mode -->
@@ -39,41 +85,59 @@
 
                 <!-- STUDENT mode -->
                 <group string="2 - Student Filters" invisible="sms_type != 'student'">
-                    <field name="student_school" placeholder="Leave blank for all schools"/>
-                    <field name="student_program" placeholder="Leave blank for all programs"/>
-                    <field name="student_course" placeholder="Leave blank for all courses"/>
+                    <field name="student_school"
+                           placeholder="Leave blank for all schools"/>
+                    <field name="student_program"
+                           placeholder="Leave blank for all programs"/>
+                    <field name="student_course"
+                           placeholder="Leave blank for all courses"/>
                     <field name="student_year" placeholder="e.g. 1, 2, 3"/>
-                    <field name="student_intake" placeholder="Leave blank for all intakes"/>
+                    <field name="student_intake"
+                           placeholder="Leave blank for all intakes"/>
                     <separator string="Recipient Groups"/>
                     <field name="include_students" widget="boolean_toggle"/>
-                    <field name="include_fathers" widget="boolean_toggle"/>
-                    <field name="include_mothers" widget="boolean_toggle"/>
+                    <field name="include_fathers"  widget="boolean_toggle"/>
+                    <field name="include_mothers"  widget="boolean_toggle"/>
                 </group>
 
-                <!-- Step 3: Message Body -->
-                <group string="3 - Message">
-                    <field name="body" widget="text" nolabel="1"
-                           placeholder="Type your SMS message here..."
-                           required="1"/>
-                </group>
+                <!-- Step 3: Message Body - full width, no 50% label column -->
+                <div class="o_wrap_field px-3 py-2">
+                    <label class="o_form_label fw-bold text-uppercase text-muted small"
+                           style="letter-spacing:.05em">3 - Message</label>
+                    <hr class="mt-1 mb-2"/>
+                    <field name="body"
+                           widget="text"
+                           nolabel="1"
+                           placeholder="Type your SMS message here…"
+                           required="1"
+                           style="width:100%; min-height:140px; font-size:1rem;
+                                  border-radius:6px; resize:vertical;"/>
+                </div>
 
-                <!-- Step 4: Preview (Manual + Ad Hoc) -->
-                <group string="4 - Recipients Preview"
-                       invisible="sms_type not in ['manual', 'adhoc']">
-                    <div class="col-12">
-                        <span class="badge bg-primary me-2">
+                <!-- Step 4: Preview (Manual + Ad Hoc only) - full width -->
+                <div class="o_wrap_field px-3 py-2"
+                     invisible="sms_type not in ['manual', 'adhoc']">
+                    <label class="o_form_label fw-bold text-uppercase text-muted small"
+                           style="letter-spacing:.05em">4 - Recipients Preview</label>
+                    <hr class="mt-1 mb-2"/>
+                    <div class="mb-2">
+                        <span class="badge bg-primary">
                             <field name="recipient_count" readonly="1" nolabel="1"/>
                             recipients
                         </span>
                     </div>
-                    <field name="preview_html" nolabel="1" readonly="1"/>
-                </group>
+                    <field name="preview_html" nolabel="1" readonly="1"
+                           style="width:100%"/>
+                </div>
 
                 <footer>
                     <button string="Send SMS" type="object" name="action_send"
-                            class="btn-primary" icon="fa-paper-plane" data-hotkey="q"/>
-                    <button string="Discard" special="cancel" class="btn-secondary" data-hotkey="x"/>
+                            class="btn-primary" icon="fa-paper-plane"
+                            data-hotkey="q"/>
+                    <button string="Discard" special="cancel"
+                            class="btn-secondary" data-hotkey="x"/>
                 </footer>
+
             </form>
         </field>
     </record>

@@ -18,9 +18,8 @@
                                 class="oe_stat_button" icon="fa-envelope">
                             <field name="message_count" widget="statinfo" string="SMS Sent"/>
                         </button>
-                        <button name="%(su_sms_integrated.action_su_sms_administrator)d"
-                                type="action" class="oe_stat_button" icon="fa-users"
-                                context="{'default_department_id': active_id}">
+                        <button name="action_view_administrators" type="object"
+                                class="oe_stat_button" icon="fa-users">
                             <field name="administrator_count" widget="statinfo" string="Administrators"/>
                         </button>
                     </div>
@@ -101,6 +100,5 @@
         <field name="name">SMS Departments</field>
         <field name="res_model">su.sms.department</field>
         <field name="view_mode">list,form</field>
-        <field name="groups_id" eval="[(4, ref('su_sms_integrated.group_su_sms_manager'))]"/>
     </record>
 </odoo>
