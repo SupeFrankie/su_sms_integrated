@@ -1,109 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <record id="su_sms_compose_view_form" model="ir.ui.view">
         <field name="name">su.sms.compose.form</field>
         <field name="model">su.sms.compose</field>
         <field name="mode">primary</field>
         <field name="arch" type="xml">
-            <form string="Compose SMS">
 
-                <!-- Step 1: Type + Administrator -->
+            <form string="Send SMS">
+
+                <!-- ==================================================================
+                     STEP 1 - SMS Type + Sender  (always visible)
+                ================================================================== -->
                 <group string="1 - Select SMS Type and Sender">
                     <field name="sms_type" widget="radio"
                            options="{'horizontal': true}" required="1"/>
                     <field name="administrator_id" required="1"/>
-
                     <!--
-                        PERMANENT FIX: was <field name="department_id" readonly="1"/>
-
-                        department_id (Many2one) caused:
-                            TypeError: unhashable type: 'dict'
-                        on the SECOND onchange call in Odoo 19.
-
-                        Mechanism:
-                          1. administrator_id changes -> _compute_department_id fires
-                          2. Odoo serialises department_id record as a dict in the
-                             onchange response: {'id': 4, 'display_name': 'ICTD'}
-                          3. Frontend stores that dict as the field value
-                          4. User does anything -> frontend sends changed_values
-                             including department_id: {dict}
-                          5. _update_cache iterates fields -> hits a Selection field
-                             (staff_gender / sms_type) -> Selection._selection is a
-                             dict in Odoo 19 -> `if dict_value in sel_dict` requires
-                             hashing -> TypeError
-
-                        The crash does NOT appear on the first onchange (wizard open)
-                        because department_id hasn't been echoed back by the frontend
-                        yet. It appears on the SECOND interaction (confirmed: 17:01:38
-                        log, ~2 min after wizard opened at 16:59:23).
-
-                        Fix: replace with department_name (Char). A Char field value
-                        is always a plain string; it never enters the Selection cache
-                        validation path regardless of what the frontend echoes back.
-
-                        DO NOT change this back to a Many2one - not as related=,
-                        not as compute=, not as any variant. The field type itself
-                        is the problem, not how it is populated.
+                        IMPORTANT: department_name must remain a Char field (not Many2one).
+                        A Many2one in a TransientModel gets serialised as a dict by Odoo 19
+                        OWL and causes "TypeError: unhashable type: dict" on the second
+                        onchange call. See commit history for full root-cause analysis.
                     -->
                     <field name="department_name" readonly="1"/>
                 </group>
 
-                <!-- MANUAL mode -->
-                <group string="2 - Recipients" invisible="sms_type != 'manual'">
-                    <field name="manual_numbers" widget="text"
-                           placeholder="Enter phone numbers separated by commas or new lines&#10;+254727374660, 0712345678, ..."
-                           nolabel="1"/>
-                </group>
+                <!-- ==================================================================
+                     STEP 2 - MANUAL
+                     Only phone numbers. No CSV upload
+                     NOTE: invisible must be on a <div>, not on a <group>
+                     with a string="" attribute. In Odoo 19 OWL, titled groups
+                     cache their visibility at first render and don't re-evaluate.
+                ================================================================== -->
+                <div invisible="sms_type != 'manual'">
+                    <group string="2 - Recipients">
+                        <field name="manual_numbers"
+                               widget="text"
+                               nolabel="1"
+                               placeholder="Enter phone numbers separated by commas or new lines&#10;+254727374660, 0712345678, ..."
+                               style="min-height:100px; width:100%;"/>
+                    </group>
+                </div>
 
-                <!-- AD HOC CSV mode -->
-                <group string="2 - Upload CSV" invisible="sms_type != 'adhoc'">
-                    <div class="alert alert-info" role="alert">
-                        CSV columns: <strong>firstname</strong>, <strong>lastname</strong>,
-                        <strong>phone_number</strong>, <strong>mobile_number</strong>.
-                        Download the template below, fill it in, then upload.
-                    </div>
+                <!-- ==================================================================
+                     STEP 2 - AD HOC (CSV Upload)
+                ================================================================== -->
+                <div invisible="sms_type != 'adhoc'">
+                    <group string="2 - Upload CSV">
+                        <div class="alert alert-info mb-2" role="alert">
+                            CSV columns: <strong>firstname</strong>,
+                            <strong>lastname</strong>,
+                            <strong>phone_number</strong>,
+                            <strong>mobile_number</strong>.
+                            Download the template below, fill it in, then upload.
+                        </div>
+                        <field name="csv_file" widget="binary"
+                               filename="csv_filename" nolabel="1"/>
+                        <field name="csv_filename" invisible="1"/>
+                        <button name="action_download_csv_template"
+                                string="Download Template"
+                                type="object"
+                                icon="fa-download"
+                                class="oe_link"/>
+                    </group>
+                </div>
 
-                    <field name="csv_file" widget="binary"
-                           filename="csv_filename" nolabel="1"/>
-                    <field name="csv_filename" invisible="1"/>
+                <!-- ==================================================================
+                     STEP 2 - STAFF FILTERS
+                     No parent fields - this goes to staff members only.
+                ================================================================== -->
+                <div invisible="sms_type != 'staff'">
+                    <group string="2 - Staff Filters">
+                        <field name="staff_department"
+                               placeholder="Leave blank for all departments"/>
+                        <field name="staff_gender"/>
+                        <field name="staff_category"
+                               placeholder="Leave blank for all"/>
+                        <field name="staff_job_status"
+                               placeholder="Leave blank for all"/>
+                    </group>
+                </div>
 
-                    <button name="action_download_csv_template"
-                            string="Download Template"
-                            type="object"
-                            icon="fa-download"
-                            class="oe_link"
-                            title="Download a blank CSV template to fill in and upload"/>
-                </group>
+                <!-- ==================================================================
+                     STEP 2 - STUDENT FILTERS
+                     Parents (fathers / mothers) only make sense here.
+                ================================================================== -->
+                <div invisible="sms_type != 'student'">
+                    <group string="2 - Student Filters">
+                        <field name="student_school"
+                               placeholder="Leave blank for all schools"/>
+                        <field name="student_program"
+                               placeholder="Leave blank for all programs"/>
+                        <field name="student_course"
+                               placeholder="Leave blank for all courses"/>
+                        <field name="student_year"
+                               placeholder="e.g. 1, 2, 3, 4"/>
+                        <field name="student_intake"
+                               placeholder="Leave blank for all intakes"/>
+                        <separator string="Recipient Groups"/>
+                        <field name="include_students" widget="boolean_toggle"/>
+                        <field name="include_fathers"  widget="boolean_toggle"/>
+                        <field name="include_mothers"  widget="boolean_toggle"/>
+                    </group>
+                </div>
 
-                <!-- STAFF mode -->
-                <group string="2 - Staff Filters" invisible="sms_type != 'staff'">
-                    <field name="staff_department" placeholder="Leave blank for all"/>
-                    <field name="staff_gender"/>
-                    <field name="staff_category" placeholder="Leave blank for all"/>
-                    <field name="staff_job_status" placeholder="Leave blank for all"/>
-                </group>
-
-                <!-- STUDENT mode -->
-                <group string="2 - Student Filters" invisible="sms_type != 'student'">
-                    <field name="student_school"
-                           placeholder="Leave blank for all schools"/>
-                    <field name="student_program"
-                           placeholder="Leave blank for all programs"/>
-                    <field name="student_course"
-                           placeholder="Leave blank for all courses"/>
-                    <field name="student_year" placeholder="e.g. 1, 2, 3"/>
-                    <field name="student_intake"
-                           placeholder="Leave blank for all intakes"/>
-                    <separator string="Recipient Groups"/>
-                    <field name="include_students" widget="boolean_toggle"/>
-                    <field name="include_fathers"  widget="boolean_toggle"/>
-                    <field name="include_mothers"  widget="boolean_toggle"/>
-                </group>
-
-                <!-- Step 3: Message Body - full width, no 50% label column -->
+                <!-- ==================================================================
+                     STEP 3 - Message Body  (always visible)
+                ================================================================== -->
                 <div class="o_wrap_field px-3 py-2">
-                    <label class="o_form_label fw-bold text-uppercase text-muted small"
-                           style="letter-spacing:.05em">3 - Message</label>
+                    <div class="o_form_label fw-bold text-uppercase text-muted small"
+                         style="letter-spacing:.05em">3 - Message</div>
                     <hr class="mt-1 mb-2"/>
                     <field name="body"
                            widget="text"
@@ -114,20 +120,37 @@
                                   border-radius:6px; resize:vertical;"/>
                 </div>
 
-                <!-- Step 4: Preview (Manual + Ad Hoc only) - full width -->
-                <div class="o_wrap_field px-3 py-2"
-                     invisible="sms_type not in ['manual', 'adhoc']">
-                    <label class="o_form_label fw-bold text-uppercase text-muted small"
-                           style="letter-spacing:.05em">4 - Recipients Preview</label>
+                <!-- ==================================================================
+                     STEP 4 - Recipients Preview
+                     Manual / Ad Hoc : live count + parsed table.
+                     Staff / Student  : info note (fetched at send time).
+                ================================================================== -->
+                <div class="o_wrap_field px-3 py-2">
+                    <div class="o_form_label fw-bold text-uppercase text-muted small"
+                         style="letter-spacing:.05em">4 - Recipients Preview</div>
                     <hr class="mt-1 mb-2"/>
-                    <div class="mb-2">
-                        <span class="badge bg-primary">
-                            <field name="recipient_count" readonly="1" nolabel="1"/>
-                            recipients
-                        </span>
+
+                    <!-- Live count + table (manual + adhoc) -->
+                    <div invisible="sms_type not in ['manual', 'adhoc']">
+                        <div class="mb-2">
+                            <span class="badge bg-primary rounded-pill">
+                                <field name="recipient_count" readonly="1" nolabel="1"/>
+                                recipients
+                            </span>
+                        </div>
+                        <field name="preview_html" nolabel="1" readonly="1"
+                               style="width:100%"/>
                     </div>
-                    <field name="preview_html" nolabel="1" readonly="1"
-                           style="width:100%"/>
+
+                    <!-- Info note for staff / student -->
+                    <div invisible="sms_type not in ['staff', 'student']">
+                        <div class="alert alert-info mb-0" role="alert">
+                            <i class="fa fa-info-circle me-1"/>
+                            Recipients will be fetched from the
+                            <strong>web service</strong> when you click
+                            <strong>Send SMS</strong>.
+                        </div>
+                    </div>
                 </div>
 
                 <footer>
@@ -149,4 +172,5 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
+
 </odoo>

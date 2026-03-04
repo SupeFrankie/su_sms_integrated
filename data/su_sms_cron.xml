@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+<data noupdate="1">
     <!--
         SU SMS - Monthly KFS5 Billing Submission
-        ═══════════════════════════════════════════════════════════
+        ==================================================================═════════
         Fires on the 1st of each month at 02:00 server time.
         Calls su.sms.department.action_kfs5_submit_monthly() which:
           1. Finds all active departments
           2. Sums their unprocessed (kfs5_processed=False) sent detail lines
           3. POSTs a Journal Voucher to KFS5 for each department with charges
           4. Marks the processed messages and department records accordingly
-          5. Logs a summary — check server logs or Settings > Scheduled Actions
+          5. Logs a summary - check server logs or Settings > Scheduled Actions
              -> "SU SMS: Monthly KFS5 Billing" -> Logs tab for results
 
         Configuration required BEFORE this will submit anything:
@@ -33,7 +35,7 @@
         <field name="code">model.action_kfs5_submit_monthly()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">months</field>
-        <field name="numbercall">-1</field>
+        <!--<field name="numbercall">-1</field>-->
         <field name="active">True</field>
         <!--
             nextcall is the date+time of the FIRST run.
@@ -45,4 +47,5 @@
         <field name="user_id" ref="base.user_root"/>
         <field name="priority">10</field>
     </record>
+</data>
 </odoo>

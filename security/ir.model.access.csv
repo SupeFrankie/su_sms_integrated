@@ -6,6 +6,7 @@ access_su_sms_administrator_manager,su.sms.administrator manager,model_su_sms_ad
 access_su_sms_message_user,su.sms.message user,model_su_sms_message,su_sms_integrated.group_su_sms_user,1,1,1,0
 access_su_sms_message_manager,su.sms.message manager,model_su_sms_message,su_sms_integrated.group_su_sms_manager,1,1,1,1
 access_su_sms_detail_user,su.sms.detail user,model_su_sms_detail,su_sms_integrated.group_su_sms_user,1,0,0,0
+access_su_sms_detail_admin,su.sms.detail admin,model_su_sms_detail,su_sms_integrated.group_su_sms_admin,1,1,1,0
 access_su_sms_detail_manager,su.sms.detail manager,model_su_sms_detail,su_sms_integrated.group_su_sms_manager,1,1,1,1
 access_su_sms_account_manage_manager,su.sms.account.manage,model_su_sms_account_manage,base.group_system,1,1,1,0
 access_su_sms_compose_user,su.sms.compose user,model_su_sms_compose,su_sms_integrated.group_su_sms_user,1,1,1,0

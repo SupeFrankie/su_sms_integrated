@@ -15,25 +15,6 @@ Credit balance enforcement (AT balance checked before every send):
   balance < 15,000 KES  - only group_su_sms_manager can send
   balance < 80 KES      - warning logged, send still allowed for managers
 
-=======================================================
-PERMANENT FIX: TypeError: unhashable type: 'dict'
-=======================================================
-Root cause (Odoo 19 onchange bug):
-
-  Step 1  User changes administrator_id.
-  Step 2  The ORM computes department_id (Many2one) and puts it into
-          the onchange response as a dict:
-            {'department_id': {'id': 4, 'display_name': 'ICTD'}}
-  Step 3  The Owl frontend stores this value and sends it back on the
-          NEXT interaction in changed_values.
-  Step 4  _update_cache iterates changed_values. When it reaches a
-          Selection field (e.g. staff_gender), Odoo 19's selection dict
-          lookup does:
-            if value in self._selection   <- value is a dict -> unhashable
-
-The crash only appears on the SECOND onchange call (confirmed by the
-17:01:38 log entry being ~2 min after the wizard opened at 16:59:23).
-
 THE FIX: department_id must not exist as Many2one in this wizard
 at all - not as related=, not as compute=. A Many2one field in a
 TransientModel form view is serialised as a dict by Owl, and that dict

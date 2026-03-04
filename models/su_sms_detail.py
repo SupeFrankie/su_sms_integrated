@@ -24,6 +24,12 @@ class SuSmsDetail(models.Model):
         string='Department',
         index=True,
     )
+    
+    recipient_count = fields.Integer(
+        string="Recipients",
+        default=1,
+        store=True,
+    )
 
     recipient_name = fields.Char('Recipient Name')
     phone_number = fields.Char('Phone Number', required=True)

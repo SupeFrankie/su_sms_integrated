@@ -125,7 +125,7 @@ class SuSmsDepartment(models.Model):
         # Log a clean summary at INFO level so it's easy to spot in the logs
         for name, ok, msg in results:
             level = 'info' if ok else 'error'
-            getattr(_logger, level)("KFS5 monthly: %s — %s", name, msg)
+            getattr(_logger, level)("KFS5 monthly: %s - %s", name, msg)
 
     # ------------------------------------------------------------------
     # KFS5 - Manual button (interactive, raises UserError on failure)

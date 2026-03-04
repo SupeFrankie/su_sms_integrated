@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ============================================================
-         Billing Report: su.sms.detail - grouped by dept / month
-         Accessible via SU SMS -> Reports -> SMS Billing Report
-    ============================================================ -->
-
-    <!-- Detail pivot: department × month, cost + recipient count -->
     <record id="su_sms_detail_view_pivot" model="ir.ui.view">
         <field name="name">su.sms.detail.pivot.billing</field>
         <field name="model">su.sms.detail</field>
@@ -14,12 +8,11 @@
                 <field name="department_id" type="row"/>
                 <field name="create_date"   type="col" interval="month"/>
                 <field name="cost"          type="measure" string="Cost (KES)"/>
-                <field name="id"            type="measure" operator="count" string="Recipients"/>
+                <field name="recipient_count" type="measure" string="Recipients"/>
             </pivot>
         </field>
     </record>
 
-    <!-- Detail graph: bar chart cost by department -->
     <record id="su_sms_detail_view_graph" model="ir.ui.view">
         <field name="name">su.sms.detail.graph.billing</field>
         <field name="model">su.sms.detail</field>
@@ -31,7 +24,6 @@
         </field>
     </record>
 
-    <!-- Detail list -->
     <record id="su_sms_detail_view_list" model="ir.ui.view">
         <field name="name">su.sms.detail.list.billing</field>
         <field name="model">su.sms.detail</field>
@@ -57,16 +49,6 @@
         </field>
     </record>
 
-    <!--
-        Detail search view.
-        ADDED: was missing (commented out as "Detail search view" placeholder).
-        Filter names MUST match the search_default_* keys used in the action
-        contexts below, otherwise the default filters silently do nothing.
-
-        action_su_sms_billing_report uses:
-            search_default_status_sent  -> filter name="status_sent"
-            search_default_by_dept      -> filter name="by_dept"
-    -->
     <record id="su_sms_detail_view_search" model="ir.ui.view">
         <field name="name">su.sms.detail.search.billing</field>
         <field name="model">su.sms.detail</field>
@@ -76,7 +58,6 @@
                 <field name="recipient_name" string="Name"/>
                 <field name="phone_number"   string="Phone"/>
                 <field name="message_id"     string="Campaign"/>
-                <!-- Status filters - name must match search_default_status_sent -->
                 <filter name="status_sent"   string="Sent"
                         domain="[('status','=','sent')]"/>
                 <filter name="status_failed" string="Failed"
@@ -85,7 +66,6 @@
                 <filter name="this_month" string="This Month"
                         domain="[('create_date','&gt;=', datetime.datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0))]"/>
                 <separator/>
-                <!-- Group By filters - name must match search_default_by_dept -->
                 <filter name="by_dept"  string="Group by Department"
                         context="{'group_by': 'department_id'}"/>
                 <filter name="by_month" string="Group by Month"
@@ -94,10 +74,6 @@
         </field>
     </record>
 
-    <!-- ============================================================
-         Action: Billing Report (per-recipient detail level)
-         Defaults: show only sent records, grouped by department
-    ============================================================ -->
     <record id="action_su_sms_billing_report" model="ir.actions.act_window">
         <field name="name">SMS Billing Report</field>
         <field name="res_model">su.sms.detail</field>
@@ -105,10 +81,6 @@
         <field name="context">{'search_default_status_sent': 1, 'search_default_by_dept': 1}</field>
     </record>
 
-    <!-- ============================================================
-         Action: Department Expenditure (campaign-level roll-up)
-         Defaults: done campaigns, grouped by department and month
-    ============================================================ -->
     <record id="action_su_sms_dept_expenditure" model="ir.actions.act_window">
         <field name="name">Department Expenditure</field>
         <field name="res_model">su.sms.message</field>

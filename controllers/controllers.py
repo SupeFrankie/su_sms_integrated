@@ -1,7 +1,15 @@
 # controllers/controllers.py
 
 
-import io
+"""
+Internal JSON-RPC routes for the SU SMS module.
+
+NOTE: The Africa's Talking delivery webhook has been intentionally moved to
+      portal.py because AT sends HTTP POST with form-encoded data — NOT a
+      JSON-RPC payload. Using type='jsonrpc' on that route caused kwargs to
+      arrive empty and silently dropped all delivery status updates.
+"""
+
 import logging
 
 from odoo import http
@@ -13,59 +21,11 @@ _logger = logging.getLogger(__name__)
 class SuSmsController(http.Controller):
 
     # ------------------------------------------------------------------
-    # Africa's Talking delivery webhook
-    # ------------------------------------------------------------------
-    @http.route(
-        '/su_sms/delivery/<string:sms_uuid>',
-        type='jsonrpc',
-        auth='public',
-        csrf=False,
-        methods=['POST'],
-    )
-    def at_delivery_report(self, sms_uuid, **kwargs):
-        """
-        Africa's Talking delivery report webhook.
-        AT POSTs status updates here for each recipient.
-        """
-        at_status     = kwargs.get('status', '')
-        at_message_id = kwargs.get('id', '')
-        phone_number  = kwargs.get('phoneNumber', '')
-
-        _logger.info(
-            "AT delivery webhook: uuid=%s status=%s at_id=%s phone=%s",
-            sms_uuid, at_status, at_message_id, phone_number,
-        )
-
-        tracker = request.env['sms.tracker'].sudo().search(
-            [('sms_uuid', '=', sms_uuid)], limit=1
-        )
-        if tracker:
-            tracker._action_update_from_at_status(at_status)
-
-        detail = request.env['su.sms.detail'].sudo().search(
-            [('sms_uuid', '=', sms_uuid)], limit=1
-        )
-        if detail:
-            status_map = {
-                'Delivered': 'delivered',
-                'Success':   'sent',
-                'Sent':      'sent',
-                'Failed':    'failed',
-                'Rejected':  'rejected',
-            }
-            detail.write({
-                'status':        status_map.get(at_status, 'failed'),
-                'at_message_id': at_message_id or detail.at_message_id,
-            })
-
-        return {'status': 'ok'}
-
-    # ------------------------------------------------------------------
-    # Balance endpoint (dashboard balance card + refresh button)
+    # Balance endpoint  (dashboard card + refresh button)
     # ------------------------------------------------------------------
     @http.route(
         '/su_sms/balance',
-        type='jsonrpc',
+        type='jsonrpc',       # internal authenticated call from OWL dashboard
         auth='user',
         methods=['POST'],
     )
@@ -75,16 +35,18 @@ class SuSmsController(http.Controller):
         Used by the dashboard balance card and its refresh button.
 
         Response:
-            {'balance': 'KES 1234.50', 'error': False}   – success
-            {'balance': None, 'error': 'message'}         – failure
+            {'balance': 'KES 1234.50', 'error': False}   - success
+            {'balance': None, 'error': 'message'}         - failure
         """
         try:
             company = request.env.company
-            # _get_at_balance() is defined on res.company by su_sms_integrated
             if not hasattr(company, '_get_at_balance'):
                 return {
                     'balance': None,
-                    'error': "Balance check not configured. Please set up your Africa's Talking credentials.",
+                    'error': (
+                        "Balance check not configured. "
+                        "Please set up your Africa's Talking credentials."
+                    ),
                 }
             balance = company._get_at_balance()
             return {'balance': balance, 'error': False}
@@ -97,7 +59,7 @@ class SuSmsController(http.Controller):
     # ------------------------------------------------------------------
     @http.route(
         '/su_sms/dashboard_stats',
-        type='jsonrpc',
+        type='jsonrpc',       # internal authenticated call from OWL dashboard
         auth='user',
         methods=['POST'],
     )
@@ -111,8 +73,10 @@ class SuSmsController(http.Controller):
         ]
         messages = env['su.sms.message'].search_read(
             domain_base,
-            fields=['sms_type', 'state', 'recipient_count', 'success_count',
-                    'total_cost', 'create_date', 'department_id'],
+            fields=[
+                'sms_type', 'state', 'recipient_count', 'success_count',
+                'total_cost', 'create_date', 'department_id',
+            ],
             order='create_date desc',
             limit=200,
         )
@@ -121,8 +85,10 @@ class SuSmsController(http.Controller):
         if is_manager:
             dept_stats = env['su.sms.department'].search_read(
                 [],
-                fields=['name', 'short_name', 'chart_code', 'account_number',
-                        'object_code', 'total_cost', 'kfs5_processed'],
+                fields=[
+                    'name', 'short_name', 'chart_code', 'account_number',
+                    'object_code', 'total_cost', 'kfs5_processed',
+                ],
             )
 
         return {
@@ -135,11 +101,10 @@ class SuSmsController(http.Controller):
 
     # ------------------------------------------------------------------
     # Ad Hoc CSV template download
-    # ADDED: serves the uploadable template so users can fill it in
     # ------------------------------------------------------------------
     @http.route(
         '/su_sms/adhoc_template.csv',
-        type='http',
+        type='http',          # file download - must stay type='http'
         auth='user',
         methods=['GET'],
     )
@@ -151,10 +116,7 @@ class SuSmsController(http.Controller):
             firstname       - recipient first name
             lastname        - recipient last name
             phone_number    - primary phone  (used for sending)
-            mobile_number   - mobile / alternative number (fallback)
-
-        The wizard parser prefers phone_number; if blank, falls back
-        to mobile_number.
+            mobile_number   - mobile / alternative number (fallback if primary blank)
         """
         csv_content = (
             'firstname,lastname,phone_number,mobile_number\n'

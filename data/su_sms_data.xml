@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ir.config_parameter for web service base URL (set by admin) -->
-    <record id="param_webservice_base_url" model="ir.config_parameter">
-        <field name="key">su_sms.webservice_base_url</field>
-        <field name="value">https://dataservice.strathmore.edu</field>
-    </record>
-    <record id="param_min_credit" model="ir.config_parameter">
-        <field name="key">su_sms.minimum_credit</field>
-        <field name="value">80</field>
-    </record>
-    <record id="param_icts_threshold" model="ir.config_parameter">
-        <field name="key">su_sms.icts_threshold</field>
-        <field name="value">15000</field>
-    </record>
+    <data noupdate="1">
+
+        <!--
+            Use set_param() instead of <record> for ir.config_parameter.
+            set_param() is an upsert: it inserts on first install and updates
+            on upgrade — no unique-key crash regardless of how the row got there.
+        -->
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.student_dataservice_url</value>
+            <value>https://juba.strathmore.edu/dataservice/students/</value>
+        </function>
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.staff_dataservice_url</value>
+            <value>https://juba.strathmore.edu/dataservice/staff/getStaffByUsername/</value>
+        </function>
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.minimum_credit</value>
+            <value>80</value>
+        </function>
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.icts_threshold</value>
+            <value>15000</value>
+        </function>
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.webservice_use_mock</value>
+            <value>false</value>
+        </function>
+
+        <function model="ir.config_parameter" name="set_param">
+            <value>su_sms.webservice_timeout</value>
+            <value>15</value>
+        </function>
+
+    </data>
 </odoo>

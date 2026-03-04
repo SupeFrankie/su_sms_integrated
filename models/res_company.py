@@ -87,7 +87,7 @@ class ResCompany(models.Model):
         self.ensure_one()
         self._assert_at_credentials()
         base_url = (
-            'https://sandbox.africastalking.com'
+            'https://api.sandbox.africastalking.com'
             if self.at_environment == 'sandbox'
             else 'https://api.africastalking.com'
         )
